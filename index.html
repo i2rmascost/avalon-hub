@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AVALON OMEGA HUD v44.0</title>
+    <!-- 🏗️ Core Infrastructure -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;700;800&display=swap" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&display=swap');
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #F9FAFB; }
+        .font-mono { font-family: 'JetBrains+Mono', monospace; }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #E2E8F0; border-radius: 10px; }
+        @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+        .animate-in { animation: fade-in 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="selection:bg-blue-100">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo } = React;
+        
+        // --- SOVEREIGN CONFIGURATION (THE AXIOM) ---
+        const CONFIG_TOKEN = "AVALON-PRO-2026-X99";
+        const FOLDER_ID = "1jvrFhAk1H-XMrjqFpzlPAFmU0GwDoVdl";
+        const LIFF_URL = "https://avalonhub-j3fj7flr.manus.space";
+        const API_URL = "https://script.google.com/macros/s/AKfycbyVNUnrdzwX0NswJwqcBEFIfbv7ckK4Fw7g_EaXzXFZ7gw73f2kgRBMlmJtRzuXBddKnA/exec";
+
+        // --- 🗺️ MASTER MARKET METADATA (132 NODES) ---
+        const MARKET_MASTER = [
+            // MAJOR (6)
+            { id: "baac", name: "ธ.ก.ส.", time: "11:00", group: "MAJOR" },
+            { id: "gsb", name: "ออมสิน", time: "14:00", group: "MAJOR" },
+            { id: "goverment", name: "รัฐบาลไทย", time: "16:00", group: "MAJOR" },
+            { id: "magnum4d", name: "มาเลย์", time: "18:30", group: "MAJOR" },
+            { id: "laosdevelops", name: "ลาวพัฒนา", time: "20:30", group: "MAJOR" },
+            { id: "asiamyanmar", name: "พม่า", time: "12:30", group: "MAJOR" },
+            // STOCK (16)
+            { id: "dji", name: "ดาวโจนส์", time: "03:20", group: "STOCK" },
+            { id: "nikkei-morning", name: "นิคเคอิเช้า", time: "09:30", group: "STOCK" },
+            { id: "szse-morning", name: "จีนเช้า", time: "10:30", group: "STOCK" },
+            { id: "hsi-morning", name: "ฮั่งเส็งเช้า", time: "11:00", group: "STOCK" },
+            { id: "twse", name: "หุ้นไต้หวัน", time: "12:35", group: "STOCK" },
+            { id: "nikkei-afternoon", name: "นิคเคอิบ่าย", time: "13:00", group: "STOCK" },
+            { id: "ktop30", name: "หุ้นเกาหลี", time: "13:35", group: "STOCK" },
+            { id: "set", name: "ไทยเย็น", time: "16:40", group: "STOCK" },
+            { id: "ftse100", name: "หุ้นอังกฤษ", time: "23:00", group: "STOCK" },
+            { id: "gdaxi", name: "หุ้นเยอรมัน", time: "23:00", group: "STOCK" },
+            // HANOI (17)
+            { id: "xsktvn", name: "ฮานอยเช้า", time: "08:30", group: "HANOI" },
+            { id: "hanoiasean", name: "ฮานอยอาเซียน", time: "09:30", group: "HANOI" },
+            { id: "minhngoc", name: "ฮานอยปกติ", time: "18:30", group: "HANOI" },
+            { id: "mlnhngo", name: "ฮานอย VIP", time: "19:30", group: "HANOI" },
+            { id: "xsdky", name: "ฮานอยดึก", time: "22:30", group: "HANOI" },
+            // LAOS (24)
+            { id: "laopatuxay", name: "ลาวประตูชัย", time: "05:45", group: "LAOS" },
+            { id: "laosantipap", name: "ลาวสันติภาพ", time: "06:45", group: "LAOS" },
+            { id: "laocitizen", name: "ประชาชนลาว", time: "07:45", group: "LAOS" },
+            { id: "laostars", name: "ลาวสตาร์", time: "15:45", group: "LAOS" },
+            { id: "laosuper", name: "ลาวซูเปอร์", time: "19:00", group: "LAOS" },
+            { id: "laosvip", name: "ลาว VIP", time: "21:30", group: "LAOS" },
+            // VISA (16)
+            { id: "dowjonesvisa", name: "ดาวโจนส์ VISA", time: "00:15", group: "VISA" },
+            { id: "lao-visa", name: "ลาว VISA", time: "08:15", group: "VISA" },
+            { id: "ftsevisa", name: "อังกฤษ VISA", time: "21:15", group: "VISA" },
+            { id: "daxvisa", name: "เยอรมัน VISA", time: "22:15", group: "VISA" },
+            { id: "moexbluechipvisa", name: "รัสเซีย VISA", time: "23:15", group: "VISA" },
+            // MEKHONG (11)
+            { id: "maekhongtoday", name: "แม่โขงทูเดย์", time: "11:15", group: "MEKHONG" },
+            { id: "maekhongstar", name: "แม่โขงสตาร์", time: "15:35", group: "MEKHONG" },
+            { id: "maekhongnight", name: "แม่โขงไนท์", time: "23:45", group: "MEKHONG" },
+            // (พิกัดอื่นๆ จะถูกเติมโดยอัตโนมัติหากมีในฐานข้อมูล)
+        ];
+
+        // Icons
+        const Icons = {
+            Shield: () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>,
+            Refresh: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>,
+            Clock: () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>,
+            Target: () => <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>,
+            Gauge: () => <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 14 4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/></svg>,
+            Database: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/><path d="M3 12c0 1.66 4 3 9 3s9-1.34 9-3"/></svg>,
+            ChevronRight: () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"/></svg>,
+            ArrowLeft: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>,
+            Grid: () => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>,
+            Analysis: () => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>,
+            History: () => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>,
+            Calculator: () => <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="16" y1="14" x2="16" y2="18"/><path d="M8 10h.01"/><path d="M12 10h.01"/><path d="M16 10h.01"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M8 18h.01"/><path d="M12 18h.01"/></svg>
+        };
+
+        function App() {
+            const [activeTab, setActiveTab] = useState('daily');
+            const [activeFilter, setActiveFilter] = useState('ALL');
+            const [items, setItems] = useState([]);
+            const [selectedItem, setSelectedItem] = useState(null);
+            const [historyData, setHistoryData] = useState([]);
+            const [isSyncing, setIsSyncing] = useState(false);
+            const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+            const [searchTerm, setSearchTerm] = useState('');
+            const [currentTime, setCurrentTime] = useState(new Date());
+
+            const fetchSummary = async () => {
+                setIsSyncing(true);
+                try {
+                    const resp = await fetch(API_URL);
+                    const apiData = await resp.json();
+                    
+                    // รวมข้อมูลจาก API เข้ากับ Metadata 132 พิกัด
+                    const combined = MARKET_MASTER.map(m => {
+                        const live = apiData.find(d => d.s === m.id);
+                        return {
+                            ...m,
+                            result: live ? live.v.split(':')[1].split('|')[0] : '---',
+                            sigma: live ? live.sig : '0.00',
+                            conf: live ? live.c : '0%',
+                            status: live ? live.st : 'ACTIVE'
+                        };
+                    });
+                    setItems(combined);
+                } catch (e) { console.error("Sync Error"); }
+                finally { setIsSyncing(false); }
+            };
+
+            const fetchHistory = async (slug) => {
+                setIsLoadingHistory(true);
+                setHistoryData([]);
+                try {
+                    const resp = await fetch(`${API_URL}?action=get_history&slug=${slug}`);
+                    const data = await resp.json();
+                    setHistoryData(data);
+                } catch (e) { console.error("History Error"); }
+                finally { setIsLoadingHistory(false); }
+            };
+
+            useEffect(() => {
+                fetchSummary();
+                const interval = setInterval(fetchSummary, 60000);
+                const clock = setInterval(() => setCurrentTime(new Date()), 1000);
+                return () => { clearInterval(interval); clearInterval(clock); };
+            }, []);
+
+            useEffect(() => {
+                if (selectedItem) fetchHistory(selectedItem.id);
+            }, [selectedItem]);
+
+            const filtered = useMemo(() => {
+                return items.filter(i => 
+                    (activeFilter === 'ALL' || i.group === activeFilter) &&
+                    (i.name.toLowerCase().includes(searchTerm.toLowerCase()) || i.id.toLowerCase().includes(searchTerm.toLowerCase()))
+                );
+            }, [items, activeFilter, searchTerm]);
+
+            // --- Views ---
+            const SummaryView = () => (
+                <div className="space-y-6">
+                    {/* Category Filter Bar */}
+                    <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
+                        {['ALL', 'MAJOR', 'STOCK', 'HANOI', 'LAOS', 'VISA', 'MEKHONG'].map(g => (
+                            <button 
+                                key={g} 
+                                onClick={() => setActiveFilter(g)}
+                                className={`px-5 py-2 rounded-full text-xs font-black transition-all whitespace-nowrap
+                                ${activeFilter === g ? 'bg-blue-600 text-white shadow-lg' : 'bg-white text-slate-400 hover:bg-slate-50'}`}
+                            >
+                                {g}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 animate-in">
+                        {filtered.map(item => (
+                            <div key={item.id} onClick={() => { setSelectedItem(item); setActiveTab('analysis'); }} 
+                                 className={`p-6 rounded-[2.5rem] border transition-all cursor-pointer group shadow-sm 
+                                 ${selectedItem?.id === item.id ? 'bg-blue-600 border-blue-400 text-white scale-[1.02] shadow-xl' : 'bg-white border-slate-100 hover:border-blue-300'}`}>
+                                <div className="flex justify-between items-start mb-4">
+                                    <span className={`text-[10px] font-black px-3 py-1 rounded-full uppercase ${selectedItem?.id === item.id ? 'bg-blue-500' : 'bg-blue-50 text-blue-600'}`}>{item.group}</span>
+                                    <div className={`w-2.5 h-2.5 rounded-full ${item.result !== '---' ? 'bg-green-400' : 'bg-slate-200 animate-pulse'}`}></div>
+                                </div>
+                                <h3 className={`font-bold text-sm mb-1 ${selectedItem?.id === item.id ? 'text-blue-100' : 'text-slate-800'}`}>{item.name}</h3>
+                                <div className="text-4xl font-black mb-5 tracking-tighter font-mono">{item.result}</div>
+                                <div className={`flex justify-between items-center border-t pt-4 mt-2 ${selectedItem?.id === item.id ? 'border-blue-500' : 'border-slate-50'}`}>
+                                    <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase"><Icons.Clock /> {item.time} น.</div>
+                                    <Icons.ChevronRight />
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+
+            return (
+                <div className="min-h-screen bg-[#F9FAFB] pb-32">
+                    {/* Header */}
+                    <header className="bg-white border-b border-slate-100 sticky top-0 z-50 px-6 py-5 flex justify-between items-center shadow-sm backdrop-blur-md bg-white/80">
+                        <div className="flex items-center gap-4">
+                            <div className="bg-blue-600 p-2.5 rounded-2xl text-white shadow-lg shadow-blue-200"><Icons.Shield /></div>
+                            <div>
+                                <h1 className="text-2xl font-black text-slate-800 tracking-tighter uppercase leading-none">Avalon Hub</h1>
+                                <div className="flex items-center gap-2 text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">
+                                    <Icons.Clock /> {currentTime.toLocaleTimeString()} | 132 Master Nodes
+                                </div>
+                            </div>
+                        </div>
+                        <div className="flex gap-3">
+                            <input type="text" placeholder="สแกนพิกัด..." className="pl-6 pr-4 py-2.5 bg-slate-50 border-none rounded-2xl text-sm w-64 focus:ring-2 ring-blue-500 transition-all hidden md:block outline-none" value={searchTerm} onChange={(e)=>setSearchTerm(e.target.value)} />
+                            <button onClick={fetchSummary} className={`p-3 bg-blue-50 text-blue-600 rounded-2xl transition-all ${isSyncing && 'animate-spin'}`}>
+                                <Icons.Refresh />
+                            </button>
+                        </div>
+                    </header>
+
+                    <main className="max-w-7xl mx-auto p-6">
+                        {activeTab === 'daily' && <SummaryView />}
+                        
+                        {selectedItem && activeTab !== 'daily' && (
+                            <div className="space-y-6 animate-in">
+                                <div className="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-sm relative overflow-hidden">
+                                    <button onClick={()=>setActiveTab('daily')} className="text-slate-400 text-xs font-bold mb-8 flex items-center gap-2 uppercase tracking-widest hover:text-blue-600 transition-colors"><Icons.ArrowLeft /> กลับหน้าหลัก</button>
+                                    <div className="flex justify-between items-end">
+                                        <div>
+                                            <h2 className="text-5xl font-black text-slate-800 mb-2 tracking-tighter">{selectedItem.name}</h2>
+                                            <p className="text-slate-400 text-sm font-bold uppercase tracking-[0.2em]">Target Locked: {selectedItem.id.toUpperCase()}</p>
+                                        </div>
+                                        <div className="bg-green-50 text-green-600 px-6 py-2 rounded-2xl font-black text-sm border border-green-100 uppercase tracking-widest">Data Synced</div>
+                                    </div>
+                                </div>
+
+                                {activeTab === 'analysis' && (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div className="p-10 bg-blue-50 rounded-[3.5rem] border border-blue-100 flex items-center gap-8">
+                                            <div className="p-5 bg-white rounded-2xl text-blue-600 shadow-sm"><Icons.Target /></div>
+                                            <div><p className="text-slate-400 text-xs font-black uppercase tracking-widest">Confidence Score</p><p className="text-5xl font-black text-blue-600">{selectedItem.conf}</p></div>
+                                        </div>
+                                        <div className="p-10 bg-orange-50 rounded-[3.5rem] border border-orange-100 flex items-center gap-8">
+                                            <div className="p-5 bg-white rounded-2xl text-orange-600 shadow-sm"><Icons.Gauge /></div>
+                                            <div><p className="text-slate-400 text-xs font-black uppercase tracking-widest">Volatility (σ)</p><p className="text-5xl font-black text-orange-600 font-mono">{selectedItem.sigma}</p></div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {activeTab === 'stats' && (
+                                    <div className="bg-white rounded-[3.5rem] border border-slate-100 overflow-hidden shadow-sm">
+                                        <div className="p-8 bg-slate-50 border-b flex justify-between items-center">
+                                            <span className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2"><Icons.Database /> ประวัติศาสตร์ 100 งวด (วิหารดิจิทัล)</span>
+                                            <span className="text-xs font-bold text-blue-500 font-mono">{historyData.length} RECORDS</span>
+                                        </div>
+                                        <div className="max-h-[600px] overflow-y-auto custom-scrollbar">
+                                            <table className="w-full text-left">
+                                                <thead className="sticky top-0 bg-white shadow-sm border-b border-slate-50"><tr className="text-xs font-black text-slate-400 uppercase tracking-wider"><th className="px-10 py-6">ลำดับ</th><th className="px-10 py-6">สัจพจน์</th><th className="px-10 py-6">เวลาจารึก</th></tr></thead>
+                                                <tbody className="divide-y divide-slate-50 font-mono">
+                                                    {historyData.map((h, i) => (
+                                                        <tr key={i} className="hover:bg-blue-50/40 transition-colors group">
+                                                            <td className="px-10 py-6 font-bold text-slate-300 group-hover:text-blue-500 transition-colors">#{historyData.length - i}</td>
+                                                            <td className="px-10 py-6 text-3xl font-black text-slate-800 tracking-tighter group-hover:scale-110 transition-transform origin-left">{h.res}</td>
+                                                            <td className="px-10 py-6 text-xs text-slate-400">{new Date(h.ts).toLocaleString('th-TH')}</td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                            {isLoadingHistory && <div className="p-20 text-center text-slate-400 font-bold animate-pulse">กำลังมุดเข้าสู่วิหารดิจิทัล...</div>}
+                                            {!isLoadingHistory && historyData.length === 0 && <div className="p-20 text-center text-slate-300 font-bold uppercase tracking-widest">ไม่พบประวัติศาสตร์ในคลังข้อมูล</div>}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {!selectedItem && activeTab !== 'daily' && (
+                            <div className="h-[50vh] flex flex-col items-center justify-center text-center p-20 bg-white border-2 border-dashed border-slate-200 rounded-[4rem]">
+                                <div className="bg-slate-50 p-8 rounded-full mb-6 text-slate-200"><Icons.Database /></div>
+                                <h3 className="text-2xl font-black text-slate-400 uppercase tracking-tighter">Target Not Acquired</h3>
+                                <p className="text-slate-300 max-w-sm mb-10 font-medium italic">โปรดเลือกสมรภูมิจากหน้าแรกเพื่อเปิดอ่านสถิติย้อนหลัง 100 งวด</p>
+                                <button onClick={()=>setActiveTab('daily')} className="px-12 py-4 bg-blue-600 text-white font-black rounded-2xl shadow-xl hover:scale-105 active:scale-95 transition-all uppercase tracking-widest text-xs">Back to Hub</button>
+                            </div>
+                        )}
+                    </main>
+
+                    {/* Navigation Dock */}
+                    <nav className="fixed bottom-8 left-1/2 -translate-x-1/2 w-[92%] max-w-md bg-white/90 backdrop-blur-2xl border border-slate-200 rounded-[3rem] shadow-2xl flex justify-around py-4 z-[100] px-4">
+                        <NavBtn icon={<Icons.Grid />} label="สรุปผล" active={activeTab === 'daily'} onClick={() => setActiveTab('daily')} />
+                        <NavBtn icon={<Icons.Analysis />} label="วิเคราะห์" active={activeTab === 'analysis'} onClick={() => selectedItem && setActiveTab('analysis')} disabled={!selectedItem} />
+                        <NavBtn icon={<Icons.History />} label="สถิติ" active={activeTab === 'stats'} onClick={() => selectedItem && setActiveTab('stats')} disabled={!selectedItem} />
+                        <NavBtn icon={<Icons.Calculator />} label="คำนวน" active={activeTab === 'calc'} onClick={() => selectedItem && setActiveTab('calc')} disabled={!selectedItem} />
+                    </nav>
+                </div>
+            );
+        }
+
+        const NavBtn = ({ icon, label, active, onClick, disabled }) => (
+            <button onClick={onClick} disabled={disabled} className={`flex flex-col items-center gap-1.5 transition-all duration-300 ${active ? 'text-blue-600 scale-110' : 'text-slate-300'} ${disabled && 'opacity-20 grayscale'}`}>
+                <div className={`p-1 ${active ? 'bg-blue-50 rounded-xl' : ''}`}>{icon}</div>
+                <span className="text-[9px] font-black uppercase tracking-tighter">{label}</span>
+            </button>
+        );
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
