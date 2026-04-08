@@ -1,243 +1,173 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { Shield, LayoutGrid, BarChart3, History, Calculator, RefreshCw, Clock, Search, ChevronRight, ArrowLeft, Target, Gauge, Database, TrendingUp, Zap, Radio } from 'lucide-react';
-
-/**
- * 🦅 AVALON OMEGA COMMAND CENTER v42.0 (HOTFIX 1.0)
- * CONFIG: AVALON-PRO-2026-X99 | LOCATION: THA KHUEN
- * 🛡️ ยุทธศาสตร์: "การสกัดข้อมูลระดับ Absolute Fail-safe ป้องกัน UI ล่ม 100%"
- */
-
-// [ACTION] บอสเปลี่ยน URL ตรงนี้
-const API_URL = "https://script.google.com/macros/s/AKfycbyVNUnrdzwX0NswJwqcBEFIfbv7ckK4Fw7g_EaXzXFZ7gw73f2kgRBMlmJtRzuXBddKnA/exec";
-
-const App = () => {
-  const [activeTab, setActiveTab] = useState('daily');
-  const [items, setItems] = useState([]);
-  const [selectedItem, setSelectedItem] = useState(null);
-  const [isSyncing, setIsSyncing] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [currentTime, setCurrentTime] = useState(new Date());
-
-  const fetchSummary = async () => {
-    setIsSyncing(true);
-    try {
-      const resp = await fetch(API_URL);
-      const data = await resp.json();
-      
-      const masterList = [
-        { id: "baac", name: "ธ.ก.ส.", time: "11:00", group: "MAJOR" },
-        { id: "gsb", name: "ออมสิน", time: "14:00", group: "MAJOR" },
-        { id: "goverment", name: "รัฐบาลไทย", time: "16:00", group: "MAJOR" },
-        { id: "laosdevelops", name: "ลาวพัฒนา", time: "20:30", group: "LAO" },
-        { id: "dji", name: "ดาวโจนส์", time: "03:20", group: "STOCK" },
-        { id: "nikkei-morning", name: "นิคเคอิเช้า", time: "09:30", group: "STOCK" }
-      ];
-      
-      // เพิ่มยี่กี 88 รอบ
-      for(let i=1; i<=88; i++) {
-         const h = Math.floor((i * 15 + 360) / 60) % 24;
-         const m = (i * 15 + 360) % 60;
-         masterList.push({
-            id: `yiki-r${String(i).padStart(2,'0')}`,
-            name: `ยี่กี รอบ ${i}`,
-            time: `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`,
-            group: "YIKI"
-         });
-      }
-
-      const processed = masterList.map(m => {
-        // ค้นหาเป้าหมายจากสัจพจน์หลังบ้าน (รองรับทั้ง key 's' และ 'slug')
-        const live = data.find(d => d.s === m.id || d.slug === m.id);
-        
-        let top3 = '---';
-        let bot2 = '--';
-        
-        // 🛡️ Absolute Fail-safe Parsing ป้องกัน UI ล่ม
-        if (live && live.v) {
-            const rawVote = String(live.v);
-            // ตัดคำนำหน้า (เช่น AUTO:, VAL:) ออกอย่างปลอดภัย
-            const cleanVote = rawVote.includes(':') ? rawVote.split(/:(.+)/)[1].trim() : rawVote.trim();
-            const parts = cleanVote.split('|');
-            top3 = parts[0] ? parts[0].trim() : '---';
-            bot2 = parts[1] ? parts[1].trim() : '--';
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Avalon Hub - Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <style>
+        /* ซ่อน Scrollbar สำหรับ Sidebar แต่ยังเลื่อนได้ */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        /* Tooltip สำหรับเลขไหล */
+        .tooltip .tooltip-text {
+            visibility: hidden;
+            opacity: 0;
+            transition: opacity 0.3s;
         }
+        .tooltip:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white font-sans antialiased" x-data="avalonApp()">
 
-        // จัดการตัวเลขสถิติอย่างรัดกุม ป้องกัน NaN
-        const sigmaVal = live && !isNaN(parseFloat(live.sig)) ? parseFloat(live.sig).toFixed(2) : '0.00';
-        const confVal = live && !isNaN(parseFloat(live.c)) ? parseFloat(live.c).toFixed(1) : '0.0';
-        const stVal = live ? (live.st || live.status || 'WAITING') : 'WAITING';
-
-        return {
-          ...m,
-          result: top3,
-          bottom2: bot2,
-          sigma: sigmaVal,
-          conf: confVal,
-          status: stVal
-        };
-      });
-      
-      setItems(processed);
-    } catch (e) {
-      console.error("AXIOM_SYNC_ERROR", e);
-    } finally {
-      setIsSyncing(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchSummary();
-    const interval = setInterval(fetchSummary, 60000);
-    const clock = setInterval(() => setCurrentTime(new Date()), 1000);
-    return () => { clearInterval(interval); clearInterval(clock); };
-  }, []);
-
-  const filtered = items.filter(i => 
-    i.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    i.id.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  return (
-    <div className="min-h-screen bg-[#030305] text-[#D4AF37] font-mono flex flex-col overflow-hidden selection:bg-[#D4AF37] selection:text-black">
-      {/* 🏛️ Sovereign Header */}
-      <header className="h-20 border-b border-yellow-900/20 bg-black/90 flex items-center justify-between px-8 z-50 shadow-2xl backdrop-blur-md">
-        <div className="flex items-center gap-6 cursor-pointer" onClick={() => { setSelectedItem(null); setActiveTab('daily'); }}>
-          <div className="relative">
-            <Shield className="w-12 h-12 text-[#D4AF37] filter drop-shadow-[0_0_10px_rgba(212,175,55,0.7)]" />
-            <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-black animate-pulse"></div>
-          </div>
-          <div>
-            <h1 className="text-2xl font-black italic tracking-tighter uppercase leading-none text-white">AVALON OMEGA</h1>
-            <div className="text-[10px] text-yellow-700 tracking-[0.4em] font-bold mt-1 uppercase">Sovereign OS v42.0</div>
-          </div>
+    <header class="fixed top-0 w-full bg-gray-800 shadow-md z-50 flex justify-between items-center px-4 py-3 border-b border-gray-700">
+        <h1 class="text-xl font-bold text-blue-400">AVALON HUB</h1>
+        <div class="flex items-center gap-4">
+            <div class="text-sm text-gray-400">
+                รีเฟรชใน: <span x-text="countdown" class="text-yellow-400 font-mono"></span> วินาที
+            </div>
+            <button @click="syncData" class="bg-blue-600 hover:bg-blue-500 px-3 py-1 rounded text-sm font-semibold transition flex items-center gap-1">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                ซิงค์ข้อมูล
+            </button>
         </div>
-        <div className="hidden md:flex gap-4 items-center">
-           <div className="relative">
-             <Search className="absolute left-4 top-3 w-4 h-4 text-yellow-700" />
-             <input 
-              type="text" 
-              placeholder="สแกนพิกัด..." 
-              className="bg-black/60 border border-yellow-900/40 rounded-2xl pl-12 pr-6 py-2.5 text-xs focus:border-yellow-500 outline-none w-64 text-white" 
-              value={searchTerm} 
-              onChange={(e)=>setSearchTerm(e.target.value)} 
-             />
-           </div>
-           <button onClick={fetchSummary} className={`p-3 bg-yellow-900/20 rounded-2xl border border-yellow-700/30 text-yellow-500 hover:bg-yellow-700 hover:text-black transition-all ${isSyncing && 'animate-spin'}`}>
-             <RefreshCw size={18} />
-           </button>
-           <div className="text-right border-l border-yellow-900/30 pl-6 ml-2">
-             <div className="text-xl font-black tabular-nums text-white">{currentTime.toLocaleTimeString()}</div>
-           </div>
+    </header>
+
+    <div class="fixed top-[52px] w-full bg-gray-900 z-40 border-b border-gray-700">
+        <div class="flex justify-center gap-8 py-2">
+            <button @click="activeTab = 'results'" :class="activeTab === 'results' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400'" class="pb-1 font-semibold">ผลรางวัลรวม</button>
+            <button @click="activeTab = 'flows'" :class="activeTab === 'flows' ? 'text-green-400 border-b-2 border-green-400' : 'text-gray-400'" class="pb-1 font-semibold">สถิติเลขไหล</button>
         </div>
-      </header>
-
-      <main className="flex-1 p-8 overflow-hidden relative">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-yellow-500/[0.03] blur-[150px] rounded-full pointer-events-none"></div>
-
-        {activeTab === 'daily' && (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4 overflow-y-auto max-h-[calc(100vh-12rem)] pr-2 custom-scrollbar pb-10">
-            {filtered.map(item => (
-              <div 
-                key={item.id}
-                onClick={() => { setSelectedItem(item); setActiveTab('analysis'); }}
-                className={`group relative p-5 rounded-[25px] border cursor-pointer transition-all duration-300 overflow-hidden
-                  ${selectedItem?.id === item.id ? 'bg-yellow-900/30 border-yellow-500 shadow-2xl scale-105' : 'bg-black/40 border-yellow-900/10 hover:border-yellow-600 hover:bg-yellow-900/5'}`}
-              >
-                <div className="flex justify-between items-start mb-3">
-                   <span className="text-[9px] font-black text-yellow-700 uppercase tracking-widest bg-yellow-900/20 px-2 py-0.5 rounded-lg truncate max-w-[70%]">{item.group}</span>
-                   <div className={`w-2 h-2 rounded-full shrink-0 ${item.status === 'IMPERIAL_STRIKE' ? 'bg-green-500 shadow-[0_0_8px_green] animate-pulse' : 'bg-yellow-900/50'}`}></div>
-                </div>
-                <div className="text-xs font-bold text-white truncate mb-1" title={item.name}>{item.name}</div>
-                <div className="flex items-baseline gap-1 mb-2">
-                  <div className="text-2xl font-black text-white font-mono tracking-tighter truncate max-w-[65%]">{item.result}</div>
-                  <div className="text-[10px] text-yellow-900 font-normal truncate">/{item.bottom2}</div>
-                </div>
-                <div className="flex justify-between items-end border-t border-yellow-900/10 pt-3">
-                   <div className="text-[9px] font-bold text-blue-400 truncate pr-1">σ: {item.sigma}</div>
-                   <div className={`text-[10px] font-black shrink-0 ${item.status === 'IMPERIAL_STRIKE' ? 'text-green-500' : 'text-yellow-600'}`}>{item.conf}%</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {selectedItem && activeTab !== 'daily' && (
-          <div className="h-full flex flex-col gap-6 animate-in slide-in-from-right duration-500 max-w-5xl mx-auto pb-20">
-             <div className="flex items-center gap-6 bg-yellow-900/10 p-8 rounded-[35px] border border-yellow-900/20 backdrop-blur-md">
-                <button onClick={() => setActiveTab('daily')} className="p-4 bg-black rounded-2xl border border-yellow-900/30 hover:bg-[#D4AF37] hover:text-black transition-all shadow-xl active:scale-95"><ArrowLeft size={20} /></button>
-                <div className="overflow-hidden">
-                   <h2 className="text-3xl font-black text-white uppercase tracking-tighter leading-none mb-2 truncate">{selectedItem.name}</h2>
-                   <p className="text-[10px] text-yellow-700 font-bold uppercase tracking-[0.4em] leading-none truncate">TARGET_ID: {selectedItem.id}</p>
-                </div>
-             </div>
-
-             {activeTab === 'analysis' && (
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="bg-black/60 border border-yellow-900/20 p-8 rounded-[40px] flex items-center gap-6 shadow-xl hover:border-yellow-500/50 transition-colors">
-                    <div className="p-5 bg-yellow-900/10 rounded-2xl border border-yellow-900/20 text-green-500 shrink-0"><Target size={32}/></div>
-                    <div className="overflow-hidden"><div className="text-[10px] text-yellow-800 font-black uppercase mb-2 tracking-widest truncate">Confidence</div><div className="text-5xl font-black text-white truncate">{selectedItem.conf}%</div></div>
-                  </div>
-                  <div className="bg-black/60 border border-yellow-900/20 p-8 rounded-[40px] flex items-center gap-6 shadow-xl hover:border-yellow-500/50 transition-colors">
-                    <div className="p-5 bg-yellow-900/10 rounded-2xl border border-yellow-900/20 text-blue-400 shrink-0"><Gauge size={32}/></div>
-                    <div className="overflow-hidden"><div className="text-[10px] text-yellow-800 font-black uppercase mb-2 tracking-widest truncate">Volatility (σ)</div><div className="text-5xl font-black text-white truncate">{selectedItem.sigma}</div></div>
-                  </div>
-                  <div className="md:col-span-2 p-10 bg-yellow-900/5 border-l-4 border-[#D4AF37] rounded-r-3xl italic text-yellow-100/60 text-sm leading-relaxed font-medium">
-                    "วิเคราะห์สัญญาณ: พิกัด {selectedItem.name} ออกรางวัลที่ {selectedItem.time} น. ระบบประเมินค่าความผันผวนอยู่ที่ระดับ {selectedItem.sigma} หากค่า Sigma ต่ำกว่า 21.0 ถือว่าปลอดภัยต่อการ Strike แนะนำให้บริหารหน้าตักตามสูตร Kelly Criterion"
-                  </div>
-               </div>
-             )}
-
-             {activeTab === 'calc' && (
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 h-auto md:h-[400px]">
-                 <div className="bg-black/60 border border-yellow-900/30 rounded-[40px] p-10 flex flex-col justify-center">
-                    <Calculator size={48} className="mb-6 text-yellow-500 shrink-0" />
-                    <h3 className="text-2xl font-black mb-8 tracking-tighter truncate">Kelly Sizing</h3>
-                    <div className="text-[10px] text-yellow-700 font-black uppercase tracking-[0.3em] mb-4 truncate">Recommended Strike Force</div>
-                    <div className="text-7xl lg:text-8xl font-black text-green-500 tracking-tighter drop-shadow-[0_0_20px_rgba(34,197,94,0.4)] truncate">
-                      {(parseFloat(selectedItem.conf) * 0.82).toFixed(1)}%
-                    </div>
-                 </div>
-                 <div className="flex flex-col gap-6">
-                    <div className="flex-1 bg-yellow-900/10 border border-yellow-900/20 rounded-[40px] flex flex-col items-center justify-center text-center p-6">
-                       <TrendingUp size={40} className="mb-4 text-green-500 shrink-0" />
-                       <div className="text-[10px] text-yellow-700 font-black uppercase tracking-widest mb-2 truncate">Expected Value (E/X)</div>
-                       <div className="text-5xl font-black text-white truncate">+{ (parseFloat(selectedItem.conf) * 0.95).toFixed(2) }</div>
-                    </div>
-                    <button className="bg-[#D4AF37] text-black font-black text-xl md:text-2xl py-6 px-4 rounded-[30px] hover:shadow-[0_0_30px_rgba(212,175,55,0.4)] active:scale-95 transition-all uppercase truncate">
-                      INITIALIZE STRIKE
-                    </button>
-                 </div>
-               </div>
-             )}
-          </div>
-        )}
-      </main>
-
-      {/* 📑 Bottom Navigation */}
-      <nav className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-md bg-black/80 backdrop-blur-xl border border-yellow-900/30 rounded-[30px] shadow-2xl flex justify-around py-3 px-2 z-[60]">
-        <NavBtn icon={<LayoutGrid size={20}/>} label="ศูนย์รวม" active={activeTab === 'daily'} onClick={() => setActiveTab('daily')} />
-        <NavBtn icon={<BarChart3 size={20}/>} label="วิเคราะห์" active={activeTab === 'analysis'} onClick={() => selectedItem && setActiveTab('analysis')} disabled={!selectedItem} />
-        <NavBtn icon={<Calculator size={20}/>} label="คำนวณ" active={activeTab === 'calc'} onClick={() => selectedItem && setActiveTab('calc')} disabled={!selectedItem} />
-      </nav>
-
-      <style dangerouslySetInnerHTML={{ __html: `
-        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&display=swap');
-        body { font-family: 'JetBrains+Mono', monospace; background: #030305; }
-        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #D4AF3733; border-radius: 10px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #D4AF3766; }
-        .animate-in { animation: fade-in 0.4s ease-out; }
-        @keyframes fade-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-      `}} />
     </div>
-  );
-};
 
-const NavBtn = ({ icon, label, active, onClick, disabled }) => (
-  <button onClick={onClick} disabled={disabled} className={`flex items-center gap-2 px-6 py-2.5 rounded-[20px] text-[10px] font-black uppercase transition-all ${active ? 'bg-[#D4AF37] text-black shadow-lg' : 'text-yellow-700 hover:bg-white/5'} ${disabled && 'opacity-20 cursor-not-allowed'}`}>
-    {icon} <span className="hidden sm:inline">{label}</span>
-  </button>
-);
+    <div class="flex pt-[100px] h-screen overflow-hidden">
+        
+        <aside class="w-32 md:w-48 flex-shrink-0 bg-gray-800 border-r border-gray-700 h-full overflow-y-auto no-scrollbar pb-20">
+            <ul class="p-2 space-y-1">
+                <template x-for="category in categories" :key="category.id">
+                    <li>
+                        <button @click="scrollTo(category.id)" class="w-full text-left px-3 py-2 text-sm rounded hover:bg-gray-700 focus:bg-gray-700 transition" x-text="category.name"></button>
+                    </li>
+                </template>
+            </ul>
+        </aside>
 
-export default App;
+        <main class="flex-1 overflow-y-auto p-4 pb-24 scroll-smooth" id="main-scroll-area">
+            
+            <div x-show="activeTab === 'results'">
+                <template x-for="category in categories" :key="category.id">
+                    <div :id="'results-' + category.id" class="mb-8">
+                        <h2 class="text-xl font-bold mb-4 border-b border-gray-700 pb-2 text-blue-300" x-text="category.name"></h2>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <div class="bg-gray-800 rounded-lg p-4 border border-gray-700 shadow-sm relative overflow-hidden">
+                                <div class="absolute top-0 right-0 bg-blue-600 text-xs px-2 py-1 rounded-bl-lg font-mono">14:00</div>
+                                <h3 class="text-md font-semibold text-gray-200 mb-2">รอบบ่าย (จำลอง)</h3>
+                                <div class="flex justify-between items-center bg-gray-900 p-2 rounded">
+                                    <div class="text-center w-1/2 border-r border-gray-700">
+                                        <div class="text-xs text-gray-500">3 ตัวบน</div>
+                                        <div class="text-2xl font-bold text-red-400">842</div>
+                                    </div>
+                                    <div class="text-center w-1/2">
+                                        <div class="text-xs text-gray-500">2 ตัวล่าง</div>
+                                        <div class="text-2xl font-bold text-blue-400">19</div>
+                                    </div>
+                                </div>
+                                <div class="mt-2 text-xs text-right text-gray-500 cursor-pointer hover:text-gray-300">งวดย้อนหลัง 100 งวด &#9654;</div>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </div>
+
+            <div x-show="activeTab === 'flows'" style="display: none;">
+                <template x-for="category in categories" :key="category.id">
+                    <div :id="'flows-' + category.id" class="mb-8">
+                        <h2 class="text-xl font-bold mb-4 border-b border-gray-700 pb-2 text-green-300" x-text="category.name"></h2>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-sm">
+                                <thead class="bg-gray-800 text-gray-300">
+                                    <tr>
+                                        <th class="p-3 rounded-tl">รอบเวลา</th>
+                                        <th class="p-3 text-center">ทิศทางไหล</th>
+                                        <th class="p-3 text-center rounded-tr">สรุปแนวโน้มรวม</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr class="border-b border-gray-800 bg-gray-900 hover:bg-gray-800 transition">
+                                        <td class="p-3 font-semibold">14:00</td>
+                                        <td class="p-3 text-center">
+                                            <span class="inline-block px-2 py-1 bg-green-900/50 text-green-400 rounded text-xs">ขาขึ้น</span>
+                                        </td>
+                                        <td class="p-3 text-center">
+                                            <div class="tooltip relative inline-block cursor-help font-bold text-lg text-white bg-gray-700 px-4 py-1 rounded">
+                                                5 - 8
+                                                <div class="tooltip-text absolute z-10 bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-48 bg-black text-xs text-left p-2 rounded shadow-lg border border-gray-600">
+                                                    <div class="text-green-400">เลขไหลรายวัน: <span class="font-bold text-white">5, 8</span></div>
+                                                    <div class="text-blue-400">สถิติอดีตสะสม: <span class="font-bold text-white">2, 9</span></div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </template>
+            </div>
+
+        </main>
+    </div>
+
+    <script>
+        function avalonApp() {
+            return {
+                activeTab: 'results',
+                countdown: 60,
+                categories: [
+                    { id: 'cat-normal', name: 'หวยหุ้นปกติ' },
+                    { id: 'cat-hanoi', name: 'หวยรายวัน ฮานอย' },
+                    { id: 'cat-laos', name: 'หวยรายวัน ลาว' },
+                    { id: 'cat-vip', name: 'หวยหุ้นวีไอพี' },
+                    { id: 'cat-special', name: 'หวยหุ้นพิเศษ' },
+                    { id: 'cat-visa', name: 'หวยหุ้นวีซ่า' },
+                    { id: 'cat-others', name: 'หวยอื่นๆ' }
+                ],
+                init() {
+                    // ระบบนับเวลาถอยหลัง Auto-Refresh
+                    setInterval(() => {
+                        if(this.countdown > 0) {
+                            this.countdown--;
+                        } else {
+                            this.syncData();
+                        }
+                    }, 1000);
+                },
+                syncData() {
+                    // Logic สำหรับดึงข้อมูล API จาก Python/Google Sheets
+                    this.countdown = 60; // รีเซ็ตเวลา
+                    console.log("THE AXIOM: Executing Data Synchronization Protocol...");
+                    // TODO: Fetch data and update DOM
+                },
+                scrollTo(id) {
+                    const prefix = this.activeTab === 'results' ? 'results-' : 'flows-';
+                    const element = document.getElementById(prefix + id);
+                    const container = document.getElementById('main-scroll-area');
+                    if (element && container) {
+                        // เลื่อนแบบ Smooth โดยคำนวณระยะ Offset
+                        container.scrollTo({
+                            top: element.offsetTop - 120, 
+                            behavior: 'smooth'
+                        });
+                    }
+                }
+            }
+        }
+    </script>
+</body>
+</html>
