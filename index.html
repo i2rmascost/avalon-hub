@@ -2,8 +2,9 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Shield, LayoutGrid, BarChart3, History, Calculator, RefreshCw, Clock, Search, ChevronRight, ArrowLeft, Target, Gauge, Database, TrendingUp, Zap, Radio } from 'lucide-react';
 
 /**
- * 🦅 AVALON OMEGA COMMAND CENTER v42.0
+ * 🦅 AVALON OMEGA COMMAND CENTER v42.0 (HOTFIX 1.0)
  * CONFIG: AVALON-PRO-2026-X99 | LOCATION: THA KHUEN
+ * 🛡️ ยุทธศาสตร์: "การสกัดข้อมูลระดับ Absolute Fail-safe ป้องกัน UI ล่ม 100%"
  */
 
 // [ACTION] บอสเปลี่ยน URL ตรงนี้
@@ -45,20 +46,40 @@ const App = () => {
       }
 
       const processed = masterList.map(m => {
-        const live = data.find(d => d.s === m.id);
-        const vals = live && live.v.includes('|') ? live.v.split(':')[1] : '---|--';
+        // ค้นหาเป้าหมายจากสัจพจน์หลังบ้าน (รองรับทั้ง key 's' และ 'slug')
+        const live = data.find(d => d.s === m.id || d.slug === m.id);
+        
+        let top3 = '---';
+        let bot2 = '--';
+        
+        // 🛡️ Absolute Fail-safe Parsing ป้องกัน UI ล่ม
+        if (live && live.v) {
+            const rawVote = String(live.v);
+            // ตัดคำนำหน้า (เช่น AUTO:, VAL:) ออกอย่างปลอดภัย
+            const cleanVote = rawVote.includes(':') ? rawVote.split(/:(.+)/)[1].trim() : rawVote.trim();
+            const parts = cleanVote.split('|');
+            top3 = parts[0] ? parts[0].trim() : '---';
+            bot2 = parts[1] ? parts[1].trim() : '--';
+        }
+
+        // จัดการตัวเลขสถิติอย่างรัดกุม ป้องกัน NaN
+        const sigmaVal = live && !isNaN(parseFloat(live.sig)) ? parseFloat(live.sig).toFixed(2) : '0.00';
+        const confVal = live && !isNaN(parseFloat(live.c)) ? parseFloat(live.c).toFixed(1) : '0.0';
+        const stVal = live ? (live.st || live.status || 'WAITING') : 'WAITING';
+
         return {
           ...m,
-          result: live ? vals.split('|')[0] : '---',
-          bottom2: live ? vals.split('|')[1] : '--',
-          sigma: live ? parseFloat(live.sig).toFixed(2) : '0.00',
-          conf: live ? parseFloat(live.c).toFixed(1) : '0.0',
-          status: live ? live.st : 'WAITING'
+          result: top3,
+          bottom2: bot2,
+          sigma: sigmaVal,
+          conf: confVal,
+          status: stVal
         };
       });
+      
       setItems(processed);
     } catch (e) {
-      console.error("AXIOM_SYNC_ERROR");
+      console.error("AXIOM_SYNC_ERROR", e);
     } finally {
       setIsSyncing(false);
     }
@@ -77,7 +98,7 @@ const App = () => {
   );
 
   return (
-    <div className="min-h-screen bg-[#030305] text-[#D4AF37] font-mono flex flex-col overflow-hidden">
+    <div className="min-h-screen bg-[#030305] text-[#D4AF37] font-mono flex flex-col overflow-hidden selection:bg-[#D4AF37] selection:text-black">
       {/* 🏛️ Sovereign Header */}
       <header className="h-20 border-b border-yellow-900/20 bg-black/90 flex items-center justify-between px-8 z-50 shadow-2xl backdrop-blur-md">
         <div className="flex items-center gap-6 cursor-pointer" onClick={() => { setSelectedItem(null); setActiveTab('daily'); }}>
@@ -114,25 +135,26 @@ const App = () => {
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-yellow-500/[0.03] blur-[150px] rounded-full pointer-events-none"></div>
 
         {activeTab === 'daily' && (
-          <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4 overflow-y-auto max-h-[calc(100vh-12rem)] pr-2 custom-scrollbar pb-10">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4 overflow-y-auto max-h-[calc(100vh-12rem)] pr-2 custom-scrollbar pb-10">
             {filtered.map(item => (
               <div 
                 key={item.id}
                 onClick={() => { setSelectedItem(item); setActiveTab('analysis'); }}
-                className={`group relative p-5 rounded-[25px] border cursor-pointer transition-all duration-300 
-                  ${selectedItem?.id === item.id ? 'bg-yellow-900/30 border-yellow-500 shadow-2xl scale-105' : 'bg-black/40 border-yellow-900/10 hover:border-yellow-600'}`}
+                className={`group relative p-5 rounded-[25px] border cursor-pointer transition-all duration-300 overflow-hidden
+                  ${selectedItem?.id === item.id ? 'bg-yellow-900/30 border-yellow-500 shadow-2xl scale-105' : 'bg-black/40 border-yellow-900/10 hover:border-yellow-600 hover:bg-yellow-900/5'}`}
               >
                 <div className="flex justify-between items-start mb-3">
-                   <span className="text-[9px] font-black text-yellow-700 uppercase tracking-widest">{item.group}</span>
-                   <div className={`w-2 h-2 rounded-full ${item.status === 'IMPERIAL_STRIKE' ? 'bg-green-500 shadow-[0_0_8px_green] animate-pulse' : 'bg-yellow-900/50'}`}></div>
+                   <span className="text-[9px] font-black text-yellow-700 uppercase tracking-widest bg-yellow-900/20 px-2 py-0.5 rounded-lg truncate max-w-[70%]">{item.group}</span>
+                   <div className={`w-2 h-2 rounded-full shrink-0 ${item.status === 'IMPERIAL_STRIKE' ? 'bg-green-500 shadow-[0_0_8px_green] animate-pulse' : 'bg-yellow-900/50'}`}></div>
                 </div>
-                <div className="text-xs font-bold text-white truncate mb-1">{item.name}</div>
-                <div className="text-2xl font-black text-white mb-2 font-mono flex items-baseline gap-1">
-                  {item.result} <span className="text-[10px] text-yellow-900 font-normal">/{item.bottom2}</span>
+                <div className="text-xs font-bold text-white truncate mb-1" title={item.name}>{item.name}</div>
+                <div className="flex items-baseline gap-1 mb-2">
+                  <div className="text-2xl font-black text-white font-mono tracking-tighter truncate max-w-[65%]">{item.result}</div>
+                  <div className="text-[10px] text-yellow-900 font-normal truncate">/{item.bottom2}</div>
                 </div>
                 <div className="flex justify-between items-end border-t border-yellow-900/10 pt-3">
-                   <div className="text-[9px] font-bold text-blue-400">σ: {item.sigma}</div>
-                   <div className={`text-[10px] font-black ${item.status === 'IMPERIAL_STRIKE' ? 'text-green-500' : 'text-yellow-600'}`}>{item.conf}%</div>
+                   <div className="text-[9px] font-bold text-blue-400 truncate pr-1">σ: {item.sigma}</div>
+                   <div className={`text-[10px] font-black shrink-0 ${item.status === 'IMPERIAL_STRIKE' ? 'text-green-500' : 'text-yellow-600'}`}>{item.conf}%</div>
                 </div>
               </div>
             ))}
@@ -140,24 +162,24 @@ const App = () => {
         )}
 
         {selectedItem && activeTab !== 'daily' && (
-          <div className="h-full flex flex-col gap-6 animate-in slide-in-from-right duration-500 max-w-5xl mx-auto">
+          <div className="h-full flex flex-col gap-6 animate-in slide-in-from-right duration-500 max-w-5xl mx-auto pb-20">
              <div className="flex items-center gap-6 bg-yellow-900/10 p-8 rounded-[35px] border border-yellow-900/20 backdrop-blur-md">
-                <button onClick={() => setActiveTab('daily')} className="p-4 bg-black rounded-2xl border border-yellow-900/30 hover:bg-[#D4AF37] hover:text-black transition-all shadow-xl"><ArrowLeft size={20} /></button>
-                <div>
-                   <h2 className="text-3xl font-black text-white uppercase tracking-tighter leading-none mb-2">{selectedItem.name}</h2>
-                   <p className="text-[10px] text-yellow-700 font-bold uppercase tracking-[0.4em] leading-none">TARGET_ID: {selectedItem.id}</p>
+                <button onClick={() => setActiveTab('daily')} className="p-4 bg-black rounded-2xl border border-yellow-900/30 hover:bg-[#D4AF37] hover:text-black transition-all shadow-xl active:scale-95"><ArrowLeft size={20} /></button>
+                <div className="overflow-hidden">
+                   <h2 className="text-3xl font-black text-white uppercase tracking-tighter leading-none mb-2 truncate">{selectedItem.name}</h2>
+                   <p className="text-[10px] text-yellow-700 font-bold uppercase tracking-[0.4em] leading-none truncate">TARGET_ID: {selectedItem.id}</p>
                 </div>
              </div>
 
              {activeTab === 'analysis' && (
                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="bg-black/60 border border-yellow-900/20 p-8 rounded-[40px] flex items-center gap-6 shadow-xl">
-                    <div className="p-5 bg-yellow-900/10 rounded-2xl border border-yellow-900/20 text-green-500"><Target size={32}/></div>
-                    <div><div className="text-[10px] text-yellow-800 font-black uppercase mb-2 tracking-widest">Confidence</div><div className="text-5xl font-black text-white">{selectedItem.conf}%</div></div>
+                  <div className="bg-black/60 border border-yellow-900/20 p-8 rounded-[40px] flex items-center gap-6 shadow-xl hover:border-yellow-500/50 transition-colors">
+                    <div className="p-5 bg-yellow-900/10 rounded-2xl border border-yellow-900/20 text-green-500 shrink-0"><Target size={32}/></div>
+                    <div className="overflow-hidden"><div className="text-[10px] text-yellow-800 font-black uppercase mb-2 tracking-widest truncate">Confidence</div><div className="text-5xl font-black text-white truncate">{selectedItem.conf}%</div></div>
                   </div>
-                  <div className="bg-black/60 border border-yellow-900/20 p-8 rounded-[40px] flex items-center gap-6 shadow-xl">
-                    <div className="p-5 bg-yellow-900/10 rounded-2xl border border-yellow-900/20 text-blue-400"><Gauge size={32}/></div>
-                    <div><div className="text-[10px] text-yellow-800 font-black uppercase mb-2 tracking-widest">Volatility (σ)</div><div className="text-5xl font-black text-white">{selectedItem.sigma}</div></div>
+                  <div className="bg-black/60 border border-yellow-900/20 p-8 rounded-[40px] flex items-center gap-6 shadow-xl hover:border-yellow-500/50 transition-colors">
+                    <div className="p-5 bg-yellow-900/10 rounded-2xl border border-yellow-900/20 text-blue-400 shrink-0"><Gauge size={32}/></div>
+                    <div className="overflow-hidden"><div className="text-[10px] text-yellow-800 font-black uppercase mb-2 tracking-widest truncate">Volatility (σ)</div><div className="text-5xl font-black text-white truncate">{selectedItem.sigma}</div></div>
                   </div>
                   <div className="md:col-span-2 p-10 bg-yellow-900/5 border-l-4 border-[#D4AF37] rounded-r-3xl italic text-yellow-100/60 text-sm leading-relaxed font-medium">
                     "วิเคราะห์สัญญาณ: พิกัด {selectedItem.name} ออกรางวัลที่ {selectedItem.time} น. ระบบประเมินค่าความผันผวนอยู่ที่ระดับ {selectedItem.sigma} หากค่า Sigma ต่ำกว่า 21.0 ถือว่าปลอดภัยต่อการ Strike แนะนำให้บริหารหน้าตักตามสูตร Kelly Criterion"
@@ -166,22 +188,22 @@ const App = () => {
              )}
 
              {activeTab === 'calc' && (
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 h-[400px]">
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 h-auto md:h-[400px]">
                  <div className="bg-black/60 border border-yellow-900/30 rounded-[40px] p-10 flex flex-col justify-center">
-                    <Calculator size={48} className="mb-6 text-yellow-500" />
-                    <h3 className="text-2xl font-black mb-8 tracking-tighter">Kelly Sizing</h3>
-                    <div className="text-[10px] text-yellow-700 font-black uppercase tracking-[0.3em] mb-4">Recommended Strike Force</div>
-                    <div className="text-8xl font-black text-green-500 tracking-tighter drop-shadow-[0_0_20px_rgba(34,197,94,0.4)]">
+                    <Calculator size={48} className="mb-6 text-yellow-500 shrink-0" />
+                    <h3 className="text-2xl font-black mb-8 tracking-tighter truncate">Kelly Sizing</h3>
+                    <div className="text-[10px] text-yellow-700 font-black uppercase tracking-[0.3em] mb-4 truncate">Recommended Strike Force</div>
+                    <div className="text-7xl lg:text-8xl font-black text-green-500 tracking-tighter drop-shadow-[0_0_20px_rgba(34,197,94,0.4)] truncate">
                       {(parseFloat(selectedItem.conf) * 0.82).toFixed(1)}%
                     </div>
                  </div>
                  <div className="flex flex-col gap-6">
-                    <div className="flex-1 bg-yellow-900/10 border border-yellow-900/20 rounded-[40px] flex flex-col items-center justify-center text-center">
-                       <TrendingUp size={40} className="mb-4 text-green-500" />
-                       <div className="text-[10px] text-yellow-700 font-black uppercase tracking-widest mb-2">Expected Value (E/X)</div>
-                       <div className="text-5xl font-black text-white">+{ (parseFloat(selectedItem.conf) * 0.95).toFixed(2) }</div>
+                    <div className="flex-1 bg-yellow-900/10 border border-yellow-900/20 rounded-[40px] flex flex-col items-center justify-center text-center p-6">
+                       <TrendingUp size={40} className="mb-4 text-green-500 shrink-0" />
+                       <div className="text-[10px] text-yellow-700 font-black uppercase tracking-widest mb-2 truncate">Expected Value (E/X)</div>
+                       <div className="text-5xl font-black text-white truncate">+{ (parseFloat(selectedItem.conf) * 0.95).toFixed(2) }</div>
                     </div>
-                    <button className="bg-[#D4AF37] text-black font-black text-2xl py-6 rounded-[30px] hover:shadow-[0_0_30px_rgba(212,175,55,0.4)] active:scale-95 transition-all uppercase">
+                    <button className="bg-[#D4AF37] text-black font-black text-xl md:text-2xl py-6 px-4 rounded-[30px] hover:shadow-[0_0_30px_rgba(212,175,55,0.4)] active:scale-95 transition-all uppercase truncate">
                       INITIALIZE STRIKE
                     </button>
                  </div>
@@ -201,7 +223,8 @@ const App = () => {
       <style dangerouslySetInnerHTML={{ __html: `
         @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&display=swap');
         body { font-family: 'JetBrains+Mono', monospace; background: #030305; }
-        .custom-scrollbar::-webkit-scrollbar { width: 3px; }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #D4AF3733; border-radius: 10px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #D4AF3766; }
         .animate-in { animation: fade-in 0.4s ease-out; }
