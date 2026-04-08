@@ -3,23 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Avalon Hub - ระบบบัญชาการสถิติและผลรางวัล">
+    <meta name="theme-color" content="#111827">
     <title>Avalon Hub - Dashboard</title>
+    
     <script src="https://cdn.tailwindcss.com"></script>
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script type="module" src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    
     <style>
-        /* ซ่อน Scrollbar สำหรับ Sidebar แต่ยังเลื่อนได้ */
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        /* Tooltip สำหรับเลขไหล */
-        .tooltip .tooltip-text {
-            visibility: hidden;
-            opacity: 0;
-            transition: opacity 0.3s;
-        }
-        .tooltip:hover .tooltip-text {
-            visibility: visible;
-            opacity: 1;
-        }
+        .tooltip .tooltip-text { visibility: hidden; opacity: 0; transition: opacity 0.3s; }
+        .tooltip:hover .tooltip-text { visibility: visible; opacity: 1; }
     </style>
 </head>
 <body class="bg-gray-900 text-white font-sans antialiased" x-data="avalonApp()">
@@ -27,147 +22,137 @@
     <header class="fixed top-0 w-full bg-gray-800 shadow-md z-50 flex justify-between items-center px-4 py-3 border-b border-gray-700">
         <h1 class="text-xl font-bold text-blue-400">AVALON HUB</h1>
         <div class="flex items-center gap-4">
-            <div class="text-sm text-gray-400">
-                รีเฟรชใน: <span x-text="countdown" class="text-yellow-400 font-mono"></span> วินาที
+            <div class="text-sm text-gray-400" aria-live="polite">
+                รีเฟรชใน: <span x-text="countdown" class="text-yellow-400 font-mono"></span> วิ.
             </div>
-            <button @click="syncData" class="bg-blue-600 hover:bg-blue-500 px-3 py-1 rounded text-sm font-semibold transition flex items-center gap-1">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <button @click="syncData" :disabled="isSyncing" aria-label="ซิงค์ข้อมูลผลรางวัล" 
+                    class="bg-blue-600 hover:bg-blue-500 disabled:bg-gray-600 px-3 py-1 rounded text-sm font-semibold transition flex items-center gap-1">
+                <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" :class="isSyncing ? 'animate-spin' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
-                ซิงค์ข้อมูล
+                <span x-text="isSyncing ? 'กำลังซิงค์...' : 'ซิงค์ข้อมูล'"></span>
             </button>
         </div>
     </header>
 
-    <div class="fixed top-[52px] w-full bg-gray-900 z-40 border-b border-gray-700">
-        <div class="flex justify-center gap-8 py-2">
-            <button @click="activeTab = 'results'" :class="activeTab === 'results' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400'" class="pb-1 font-semibold">ผลรางวัลรวม</button>
-            <button @click="activeTab = 'flows'" :class="activeTab === 'flows' ? 'text-green-400 border-b-2 border-green-400' : 'text-gray-400'" class="pb-1 font-semibold">สถิติเลขไหล</button>
+    <nav class="fixed top-[52px] w-full bg-gray-900 z-40 border-b border-gray-700" aria-label="Main Navigation">
+        <div class="flex justify-center gap-8 py-2" role="tablist">
+            <button @click="activeTab = 'results'" role="tab" :aria-selected="activeTab === 'results'" 
+                    :class="activeTab === 'results' ? 'text-blue-400 border-blue-400' : 'text-gray-400 border-transparent'" 
+                    class="pb-1 font-semibold border-b-2 transition">ผลรางวัลรวม</button>
+            <button @click="activeTab = 'flows'" role="tab" :aria-selected="activeTab === 'flows'" 
+                    :class="activeTab === 'flows' ? 'text-green-400 border-green-400' : 'text-gray-400 border-transparent'" 
+                    class="pb-1 font-semibold border-b-2 transition">สถิติเลขไหล</button>
         </div>
-    </div>
+    </nav>
 
     <div class="flex pt-[100px] h-screen overflow-hidden">
         
-        <aside class="w-32 md:w-48 flex-shrink-0 bg-gray-800 border-r border-gray-700 h-full overflow-y-auto no-scrollbar pb-20">
+        <nav class="w-32 md:w-48 flex-shrink-0 bg-gray-800 border-r border-gray-700 h-full overflow-y-auto no-scrollbar pb-20" aria-label="Category Navigation">
             <ul class="p-2 space-y-1">
                 <template x-for="category in categories" :key="category.id">
                     <li>
-                        <button @click="scrollTo(category.id)" class="w-full text-left px-3 py-2 text-sm rounded hover:bg-gray-700 focus:bg-gray-700 transition" x-text="category.name"></button>
+                        <button @click="scrollTo(category.id)" 
+                                class="w-full text-left px-3 py-2 text-sm rounded hover:bg-gray-700 focus:ring-2 focus:ring-blue-500 transition" 
+                                x-text="category.name" :aria-label="'เลื่อนไปยังหมวดหมู่ ' + category.name"></button>
                     </li>
                 </template>
             </ul>
-        </aside>
+        </nav>
 
-        <main class="flex-1 overflow-y-auto p-4 pb-24 scroll-smooth" id="main-scroll-area">
+        <main class="flex-1 overflow-y-auto p-4 pb-24 scroll-smooth" id="main-scroll-area" aria-live="polite">
             
-            <div x-show="activeTab === 'results'">
+            <section x-show="activeTab === 'results'" role="tabpanel" aria-labelledby="tab-results">
                 <template x-for="category in categories" :key="category.id">
                     <div :id="'results-' + category.id" class="mb-8">
                         <h2 class="text-xl font-bold mb-4 border-b border-gray-700 pb-2 text-blue-300" x-text="category.name"></h2>
                         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            <div class="bg-gray-800 rounded-lg p-4 border border-gray-700 shadow-sm relative overflow-hidden">
-                                <div class="absolute top-0 right-0 bg-blue-600 text-xs px-2 py-1 rounded-bl-lg font-mono">14:00</div>
-                                <h3 class="text-md font-semibold text-gray-200 mb-2">รอบบ่าย (จำลอง)</h3>
-                                <div class="flex justify-between items-center bg-gray-900 p-2 rounded">
-                                    <div class="text-center w-1/2 border-r border-gray-700">
-                                        <div class="text-xs text-gray-500">3 ตัวบน</div>
-                                        <div class="text-2xl font-bold text-red-400">842</div>
+                            
+                            <template x-for="lotto in getLotteriesByCategory(category.id)" :key="lotto.id">
+                                <article class="bg-gray-800 rounded-lg p-4 border border-gray-700 shadow-sm relative overflow-hidden focus-within:ring-2 focus-within:ring-blue-500">
+                                    <div class="absolute top-0 right-0 bg-blue-600 text-xs px-2 py-1 rounded-bl-lg font-mono" x-text="lotto.time"></div>
+                                    <h3 class="text-md font-semibold text-gray-200 mb-2" x-text="lotto.name"></h3>
+                                    <div class="flex justify-between items-center bg-gray-900 p-2 rounded">
+                                        <div class="text-center w-1/2 border-r border-gray-700">
+                                            <div class="text-xs text-gray-500">3 ตัวบน</div>
+                                            <div class="text-2xl font-bold text-red-400" x-text="lotto.top3"></div>
+                                        </div>
+                                        <div class="text-center w-1/2">
+                                            <div class="text-xs text-gray-500">2 ตัวล่าง</div>
+                                            <div class="text-2xl font-bold text-blue-400" x-text="lotto.bottom2"></div>
+                                        </div>
                                     </div>
-                                    <div class="text-center w-1/2">
-                                        <div class="text-xs text-gray-500">2 ตัวล่าง</div>
-                                        <div class="text-2xl font-bold text-blue-400">19</div>
-                                    </div>
-                                </div>
-                                <div class="mt-2 text-xs text-right text-gray-500 cursor-pointer hover:text-gray-300">งวดย้อนหลัง 100 งวด &#9654;</div>
-                            </div>
-                        </div>
-                    </div>
-                </template>
-            </div>
+                                    <button class="w-full mt-2 text-xs text-right text-gray-500 hover:text-blue-300 transition focus:outline-none" aria-label="ดูงวดย้อนหลัง">
+                                        งวดย้อนหลัง 100 งวด &#9654;
+                                    </button>
+                                </article>
+                            </template>
 
-            <div x-show="activeTab === 'flows'" style="display: none;">
-                <template x-for="category in categories" :key="category.id">
-                    <div :id="'flows-' + category.id" class="mb-8">
-                        <h2 class="text-xl font-bold mb-4 border-b border-gray-700 pb-2 text-green-300" x-text="category.name"></h2>
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-left text-sm">
-                                <thead class="bg-gray-800 text-gray-300">
-                                    <tr>
-                                        <th class="p-3 rounded-tl">รอบเวลา</th>
-                                        <th class="p-3 text-center">ทิศทางไหล</th>
-                                        <th class="p-3 text-center rounded-tr">สรุปแนวโน้มรวม</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr class="border-b border-gray-800 bg-gray-900 hover:bg-gray-800 transition">
-                                        <td class="p-3 font-semibold">14:00</td>
-                                        <td class="p-3 text-center">
-                                            <span class="inline-block px-2 py-1 bg-green-900/50 text-green-400 rounded text-xs">ขาขึ้น</span>
-                                        </td>
-                                        <td class="p-3 text-center">
-                                            <div class="tooltip relative inline-block cursor-help font-bold text-lg text-white bg-gray-700 px-4 py-1 rounded">
-                                                5 - 8
-                                                <div class="tooltip-text absolute z-10 bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-48 bg-black text-xs text-left p-2 rounded shadow-lg border border-gray-600">
-                                                    <div class="text-green-400">เลขไหลรายวัน: <span class="font-bold text-white">5, 8</span></div>
-                                                    <div class="text-blue-400">สถิติอดีตสะสม: <span class="font-bold text-white">2, 9</span></div>
-                                                </div>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
                         </div>
                     </div>
                 </template>
-            </div>
+            </section>
+
+            <section x-show="activeTab === 'flows'" role="tabpanel" aria-labelledby="tab-flows" style="display: none;">
+                 <div class="text-gray-400 text-center py-10">[โมดูลประมวลผลสถิติอดีต 4 หลัก... สถานะ: รอการเชื่อมต่อ API]</div>
+            </section>
 
         </main>
     </div>
 
     <script>
-        function avalonApp() {
-            return {
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('avalonApp', () => ({
                 activeTab: 'results',
                 countdown: 60,
+                isSyncing: false,
                 categories: [
                     { id: 'cat-normal', name: 'หวยหุ้นปกติ' },
-                    { id: 'cat-hanoi', name: 'หวยรายวัน ฮานอย' },
-                    { id: 'cat-laos', name: 'หวยรายวัน ลาว' },
-                    { id: 'cat-vip', name: 'หวยหุ้นวีไอพี' },
-                    { id: 'cat-special', name: 'หวยหุ้นพิเศษ' },
-                    { id: 'cat-visa', name: 'หวยหุ้นวีซ่า' },
-                    { id: 'cat-others', name: 'หวยอื่นๆ' }
+                    { id: 'cat-hanoi', name: 'หวยรายวัน ฮานอย' }
+                ],
+                // [Dynamic Content] ฐานข้อมูลจำลองสำหรับ Loop
+                lotteriesData: [
+                    { id: 'dji', categoryId: 'cat-normal', name: 'ดาวโจนส์', time: '03:20', top3: '225', bottom2: '42' },
+                    { id: 'hanoi-v', categoryId: 'cat-hanoi', name: 'ฮานอย VISA', time: '16:15', top3: '---', bottom2: '--' }
                 ],
                 init() {
-                    // ระบบนับเวลาถอยหลัง Auto-Refresh
                     setInterval(() => {
-                        if(this.countdown > 0) {
+                        if(this.countdown > 0 && !this.isSyncing) {
                             this.countdown--;
-                        } else {
+                        } else if (this.countdown === 0) {
                             this.syncData();
                         }
                     }, 1000);
                 },
-                syncData() {
-                    // Logic สำหรับดึงข้อมูล API จาก Python/Google Sheets
-                    this.countdown = 60; // รีเซ็ตเวลา
-                    console.log("THE AXIOM: Executing Data Synchronization Protocol...");
-                    // TODO: Fetch data and update DOM
+                getLotteriesByCategory(catId) {
+                    return this.lotteriesData.filter(l => l.categoryId === catId);
+                },
+                async syncData() {
+                    // [Code Quality] Error Handling & Async Fetch Simulation
+                    this.isSyncing = true;
+                    console.log("THE AXIOM: Executing API Request...");
+                    try {
+                        // จำลองการดีเลย์เครือข่าย
+                        await new Promise(resolve => setTimeout(resolve, 1500));
+                        // TODO: await fetch('API_ENDPOINT')
+                        this.countdown = 60;
+                        console.log("THE AXIOM: Data Synced Successfully.");
+                    } catch (error) {
+                        console.error("THE AXIOM: API Connection Failed.", error);
+                    } finally {
+                        this.isSyncing = false;
+                    }
                 },
                 scrollTo(id) {
                     const prefix = this.activeTab === 'results' ? 'results-' : 'flows-';
                     const element = document.getElementById(prefix + id);
                     const container = document.getElementById('main-scroll-area');
                     if (element && container) {
-                        // เลื่อนแบบ Smooth โดยคำนวณระยะ Offset
-                        container.scrollTo({
-                            top: element.offsetTop - 120, 
-                            behavior: 'smooth'
-                        });
+                        container.scrollTo({ top: element.offsetTop - 120, behavior: 'smooth' });
                     }
                 }
-            }
-        }
+            }));
+        });
     </script>
 </body>
 </html>
