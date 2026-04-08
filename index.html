@@ -1,298 +1,219 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { 
-  Search, Clock, Bell, Menu, Home, BarChart2, 
-  ClipboardList, User, RefreshCw, Calculator, History
-} from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Shield, LayoutGrid, BarChart3, History, Calculator, RefreshCw, Clock, Search, ChevronRight, ArrowLeft, Target, Gauge, Database, TrendingUp, Zap, Radio } from 'lucide-react';
 
 /**
- * 🦅 AVALON SOVEREIGN ASI HUB - LIGHT MOBILE HUD (CHRONOS SYNC)
- * ยุทธศาสตร์: "ซิงค์ข้อมูลตามกำหนดเวลาเป้าหมาย ลดภาระ CPU 90%"
- * CONFIG_TOKEN: "AVALON-PRO-2026-X99"
+ * 🦅 AVALON OMEGA COMMAND CENTER v42.0
+ * CONFIG: AVALON-PRO-2026-X99 | LOCATION: THA KHUEN
  */
 
-// [ACTION] URL ข่ายเทพหลังบ้าน
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyVNUnrdzwX0NswJwqcBEFIfbv7ckK4Fw7g_EaXzXFZ7gw73f2kgRBMlmJtRzuXBddKnA/exec";
+// [ACTION] บอสเปลี่ยน URL ตรงนี้
+const API_URL = "https://script.google.com/macros/s/AKfycbyVNUnrdzwX0NswJwqcBEFIfbv7ckK4Fw7g_EaXzXFZ7gw73f2kgRBMlmJtRzuXBddKnA/exec";
 
 const App = () => {
-  const [nodes, setNodes] = useState([]);
+  const [activeTab, setActiveTab] = useState('daily');
+  const [items, setItems] = useState([]);
+  const [selectedItem, setSelectedItem] = useState(null);
   const [isSyncing, setIsSyncing] = useState(false);
-  const [search, setSearch] = useState('');
-  const [filterGroup, setFilterGroup] = useState('ALL');
-  const [filterStatus, setFilterStatus] = useState('ALL');
-  const [now, setNow] = useState(new Date());
-  const [activeNav, setActiveNav] = useState('home');
-  
-  // สถานะสำหรับโชว์เวลา Sync รอบถัดไป
-  const [nextSync, setNextSync] = useState('--:--:--');
-  const syncScheduleRef = useRef(new Set());
+  const [searchTerm, setSearchTerm] = useState('');
+  const [currentTime, setCurrentTime] = useState(new Date());
 
-  // 🧮 ฟังก์ชันคำนวณหาเวลา Sync ถัดไปที่ใกล้ที่สุด
-  const calculateNextSync = (scheduleSet) => {
-      if (scheduleSet.size === 0) return '--:--:--';
-      const currentTime = new Date();
-      const currentSeconds = (currentTime.getHours() * 60 + currentTime.getMinutes()) * 60 + currentTime.getSeconds();
-      
-      let minDiff = Infinity;
-      let nextTimeStr = '--:--:--';
-
-      scheduleSet.forEach(timeStr => {
-          const [h, m, s] = timeStr.split(':').map(Number);
-          const targetSeconds = (h * 60 + m) * 60 + s;
-          let diff = targetSeconds - currentSeconds;
-          if (diff <= 0) diff += 24 * 60 * 60; // หากเวลาผ่านไปแล้ว ให้ปัดเป็นรอบของวันพรุ่งนี้
-
-          if (diff < minDiff) {
-              minDiff = diff;
-              nextTimeStr = timeStr;
-          }
-      });
-      return nextTimeStr;
-  };
-
-  // 📡 ฟังก์ชันดึงข้อมูลจาก API
-  const fetchData = async () => {
+  const fetchSummary = async () => {
     setIsSyncing(true);
     try {
-      const res = await fetch(SCRIPT_URL);
-      const data = await res.json();
-      setNodes(data);
+      const resp = await fetch(API_URL);
+      const data = await resp.json();
+      
+      const masterList = [
+        { id: "baac", name: "ธ.ก.ส.", time: "11:00", group: "MAJOR" },
+        { id: "gsb", name: "ออมสิน", time: "14:00", group: "MAJOR" },
+        { id: "goverment", name: "รัฐบาลไทย", time: "16:00", group: "MAJOR" },
+        { id: "laosdevelops", name: "ลาวพัฒนา", time: "20:30", group: "LAO" },
+        { id: "dji", name: "ดาวโจนส์", time: "03:20", group: "STOCK" },
+        { id: "nikkei-morning", name: "นิคเคอิเช้า", time: "09:30", group: "STOCK" }
+      ];
+      
+      // เพิ่มยี่กี 88 รอบ
+      for(let i=1; i<=88; i++) {
+         const h = Math.floor((i * 15 + 360) / 60) % 24;
+         const m = (i * 15 + 360) % 60;
+         masterList.push({
+            id: `yiki-r${String(i).padStart(2,'0')}`,
+            name: `ยี่กี รอบ ${i}`,
+            time: `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`,
+            group: "YIKI"
+         });
+      }
+
+      const processed = masterList.map(m => {
+        const live = data.find(d => d.s === m.id);
+        const vals = live && live.v.includes('|') ? live.v.split(':')[1] : '---|--';
+        return {
+          ...m,
+          result: live ? vals.split('|')[0] : '---',
+          bottom2: live ? vals.split('|')[1] : '--',
+          sigma: live ? parseFloat(live.sig).toFixed(2) : '0.00',
+          conf: live ? parseFloat(live.c).toFixed(1) : '0.0',
+          status: live ? live.st : 'WAITING'
+        };
+      });
+      setItems(processed);
     } catch (e) {
-      console.error("API Sync Failed");
-      // Fallback Mock Data กรณีเชื่อมต่อขัดข้อง
-      setNodes([
-        { id: "goverment", name: "รัฐบาลไทย", time: "16:00:00", group: "THAILAND", top3: "569", bottom2: "69", status: "WAIT", conf: "65.0%" },
-        { id: "magnum4d", name: "มาเลย์", time: "18:30:00", group: "MALAYSIA", top3: "800", bottom2: "02", status: "WAIT", conf: "60.0%" },
-        { id: "laosdevelops", name: "ลาวพัฒนา", time: "20:30:00", group: "LAOS", top3: "040", bottom2: "40", status: "WAIT", conf: "60.0%" }
-      ]);
+      console.error("AXIOM_SYNC_ERROR");
     } finally {
       setIsSyncing(false);
-      // อัปเดตป้ายเวลา Sync ถัดไปหลังดึงข้อมูลเสร็จ
-      setTimeout(() => {
-         setNextSync(calculateNextSync(syncScheduleRef.current));
-      }, 1000);
     }
   };
 
-  // 📅 สร้างตารางเวลา Sync อัตโนมัติเมื่อข้อมูล Nodes มีการเปลี่ยนแปลง
   useEffect(() => {
-    if (nodes.length === 0) return;
-    const newSchedule = new Set();
-    
-    nodes.forEach(node => {
-      if (node.time && node.time !== "N/A" && node.time.includes(':')) {
-        const parts = node.time.split(':');
-        const h = parseInt(parts[0], 10);
-        const m = parseInt(parts[1], 10);
-        
-        if (!isNaN(h) && !isNaN(m)) {
-            // ดักสกัดข้อมูล 4 จังหวะ: ตรงเวลาพอดี, +1 นาที, +3 นาที, +6 นาที
-            [0, 1, 3, 6].forEach(offset => {
-              let sm = m + offset;
-              let sh = h;
-              if (sm >= 60) { sm -= 60; sh = (sh + 1) % 24; }
-              const timeStr = `${String(sh).padStart(2, '0')}:${String(sm).padStart(2, '0')}:00`;
-              newSchedule.add(timeStr);
-            });
-        }
-      }
-    });
-
-    // เพิ่มจุด Sync ทุกต้นชั่วโมงเป็นค่าพื้นฐาน (Safety Fallback)
-    for(let i=0; i<24; i++) {
-        newSchedule.add(`${String(i).padStart(2, '0')}:00:00`);
-    }
-
-    syncScheduleRef.current = newSchedule;
-    setNextSync(calculateNextSync(newSchedule));
-  }, [nodes]);
-
-  // ⏱️ สมองกลนาฬิกา (Master Clock & Event Trigger)
-  useEffect(() => {
-    fetchData(); // โหลดครั้งแรก
-
-    const clock = setInterval(() => {
-      const currentNow = new Date();
-      setNow(currentNow);
-      
-      const h = String(currentNow.getHours()).padStart(2, '0');
-      const m = String(currentNow.getMinutes()).padStart(2, '0');
-      const s = String(currentNow.getSeconds()).padStart(2, '0');
-      const timeStr = `${h}:${m}:${s}`;
-
-      // หากเวลาปัจจุบันตรงกับตารางที่วางไว้ -> ยิง API ทันที
-      if (syncScheduleRef.current.has(timeStr)) {
-         console.log(`[CHRONOS_EVENT] จุดระเบิดการซิงค์ตามนัดหมายที่เวลา ${timeStr}`);
-         fetchData();
-      } else if (s === "00") {
-         // อัปเดตป้ายเวลาทุกๆ ต้นนาที เพื่อความสวยงามของ UI
-         setNextSync(calculateNextSync(syncScheduleRef.current));
-      }
-    }, 1000);
-    
-    return () => clearInterval(clock);
+    fetchSummary();
+    const interval = setInterval(fetchSummary, 60000);
+    const clock = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => { clearInterval(interval); clearInterval(clock); };
   }, []);
 
-  const dateStr = now.toLocaleDateString('th-TH', { weekday: 'long', day: 'numeric', month: 'long' });
-  const timeStr = now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
-
-  const groups = useMemo(() => ['ALL', ...new Set(nodes.map(n => n.group).filter(Boolean))], [nodes]);
-
-  const filteredNodes = useMemo(() => {
-    return nodes.filter(n => {
-      const matchSearch = n.name?.toLowerCase().includes(search.toLowerCase()) || n.id?.toLowerCase().includes(search.toLowerCase());
-      const matchGroup = filterGroup === 'ALL' || n.group === filterGroup;
-      const matchStatus = filterStatus === 'ALL' || 
-                          (filterStatus === 'READY' && n.status === 'IMPERIAL_STRIKE') ||
-                          (filterStatus === 'WAIT' && n.status !== 'IMPERIAL_STRIKE');
-      return matchSearch && matchGroup && matchStatus;
-    });
-  }, [nodes, search, filterGroup, filterStatus]);
-
-  const getStatusDisplay = (status) => {
-    if (status === 'IMPERIAL_STRIKE') return { text: "🟢 พร้อมสังหาร", bg: "bg-green-50 text-green-600 border-green-200" };
-    return { text: "🟡 รอเวลา", bg: "bg-orange-50 text-orange-500 border-orange-200" };
-  };
-
-  const formatTime = (timeRaw) => {
-    if (!timeRaw) return "N/A";
-    const parts = timeRaw.split(':');
-    return `${parts[0]}:${parts[1]}`;
-  };
+  const filtered = items.filter(i => 
+    i.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    i.id.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
-    <div className="min-h-screen bg-[#F5F7FA] font-sans text-slate-800 pb-20 selection:bg-blue-100">
-      
-      {/* 🏛️ Top Header */}
-      <header className="bg-white px-5 py-4 flex justify-between items-center shadow-sm sticky top-0 z-50">
-        <div className="flex flex-col">
-          <div className="text-lg font-black text-slate-800">{timeStr}</div>
-          <div className="text-xs font-medium text-slate-500">{dateStr}</div>
-        </div>
-        <div className="flex items-center gap-4 text-slate-600">
-          <div className="flex flex-col items-end mr-1">
-             <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Smart Sync</span>
-             <span className="text-xs font-black text-blue-500 font-mono tracking-tighter">{nextSync}</span>
+    <div className="min-h-screen bg-[#030305] text-[#D4AF37] font-mono flex flex-col overflow-hidden">
+      {/* 🏛️ Sovereign Header */}
+      <header className="h-20 border-b border-yellow-900/20 bg-black/90 flex items-center justify-between px-8 z-50 shadow-2xl backdrop-blur-md">
+        <div className="flex items-center gap-6 cursor-pointer" onClick={() => { setSelectedItem(null); setActiveTab('daily'); }}>
+          <div className="relative">
+            <Shield className="w-12 h-12 text-[#D4AF37] filter drop-shadow-[0_0_10px_rgba(212,175,55,0.7)]" />
+            <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-black animate-pulse"></div>
           </div>
-          <button onClick={fetchData} className={`${isSyncing ? 'animate-spin text-blue-500' : 'text-slate-400 hover:text-blue-500 transition-colors'}`}>
-             <RefreshCw size={22} strokeWidth={2.5} />
-          </button>
+          <div>
+            <h1 className="text-2xl font-black italic tracking-tighter uppercase leading-none text-white">AVALON OMEGA</h1>
+            <div className="text-[10px] text-yellow-700 tracking-[0.4em] font-bold mt-1 uppercase">Sovereign OS v42.0</div>
+          </div>
+        </div>
+        <div className="hidden md:flex gap-4 items-center">
+           <div className="relative">
+             <Search className="absolute left-4 top-3 w-4 h-4 text-yellow-700" />
+             <input 
+              type="text" 
+              placeholder="สแกนพิกัด..." 
+              className="bg-black/60 border border-yellow-900/40 rounded-2xl pl-12 pr-6 py-2.5 text-xs focus:border-yellow-500 outline-none w-64 text-white" 
+              value={searchTerm} 
+              onChange={(e)=>setSearchTerm(e.target.value)} 
+             />
+           </div>
+           <button onClick={fetchSummary} className={`p-3 bg-yellow-900/20 rounded-2xl border border-yellow-700/30 text-yellow-500 hover:bg-yellow-700 hover:text-black transition-all ${isSyncing && 'animate-spin'}`}>
+             <RefreshCw size={18} />
+           </button>
+           <div className="text-right border-l border-yellow-900/30 pl-6 ml-2">
+             <div className="text-xl font-black tabular-nums text-white">{currentTime.toLocaleTimeString()}</div>
+           </div>
         </div>
       </header>
 
-      <main className="max-w-md mx-auto sm:max-w-3xl">
-        {/* 🔍 Search & Filter Section */}
-        <div className="px-5 py-4 space-y-3">
-          <div className="relative">
-            <Search className="absolute left-4 top-3 w-5 h-5 text-slate-400" />
-            <input 
-              type="text" 
-              placeholder="พิมพ์ชื่อสมรภูมิ..." 
-              className="w-full bg-white border border-slate-200 rounded-2xl py-3 pl-12 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm transition-all"
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-            />
-          </div>
-          <div className="flex gap-3">
-            <select 
-              className="flex-1 bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-600 shadow-sm focus:outline-none"
-              value={filterGroup}
-              onChange={e => setFilterGroup(e.target.value)}
-            >
-              <option value="ALL">ประเภท (ทั้งหมด)</option>
-              {groups.filter(g => g !== 'ALL').map(g => <option key={g} value={g}>{g}</option>)}
-            </select>
-            <select 
-              className="flex-1 bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-600 shadow-sm focus:outline-none"
-              value={filterStatus}
-              onChange={e => setFilterStatus(e.target.value)}
-            >
-              <option value="ALL">สถานะ (ทั้งหมด)</option>
-              <option value="READY">พร้อมสังหาร</option>
-              <option value="WAIT">รอเวลา</option>
-            </select>
-          </div>
-        </div>
+      <main className="flex-1 p-8 overflow-hidden relative">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-yellow-500/[0.03] blur-[150px] rounded-full pointer-events-none"></div>
 
-        {/* 🗺️ Battlefields List */}
-        <div className="px-5 space-y-4 pb-6">
-          {filteredNodes.length > 0 ? filteredNodes.map(node => {
-            const st = getStatusDisplay(node.status);
-            return (
-              <div key={node.id} className="bg-white rounded-3xl p-5 shadow-sm border border-slate-100 hover:border-blue-300 transition-colors">
-                
-                {/* Card Top: Info & Results */}
-                <div className="flex justify-between items-start">
-                  <div className="flex flex-col gap-1.5">
-                    <h2 className="text-lg font-black text-slate-800 leading-none">{node.name}</h2>
-                    <div className="flex items-center gap-1.5 text-xs font-bold text-slate-500 bg-slate-50 px-2 py-1 rounded-md w-max border border-slate-100">
-                      <Clock size={12} className="text-blue-500" /> 
-                      ออก {formatTime(node.time)}
-                    </div>
-                  </div>
-                  
-                  <div className="text-right flex flex-col items-end gap-0.5">
-                    <div className="text-[9px] font-black text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full mb-1 uppercase tracking-widest">
-                      งวดล่าสุด
-                    </div>
-                    <div className="text-sm font-bold text-slate-600 flex items-center gap-2">
-                      บน <span className="text-red-500 text-xl font-black font-mono tracking-tighter">{node.top3}</span>
-                    </div>
-                    <div className="text-sm font-bold text-slate-600 flex items-center gap-2">
-                      ล่าง <span className="text-red-500 text-xl font-black font-mono tracking-tighter">{node.bottom2}</span>
-                    </div>
-                  </div>
+        {activeTab === 'daily' && (
+          <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4 overflow-y-auto max-h-[calc(100vh-12rem)] pr-2 custom-scrollbar pb-10">
+            {filtered.map(item => (
+              <div 
+                key={item.id}
+                onClick={() => { setSelectedItem(item); setActiveTab('analysis'); }}
+                className={`group relative p-5 rounded-[25px] border cursor-pointer transition-all duration-300 
+                  ${selectedItem?.id === item.id ? 'bg-yellow-900/30 border-yellow-500 shadow-2xl scale-105' : 'bg-black/40 border-yellow-900/10 hover:border-yellow-600'}`}
+              >
+                <div className="flex justify-between items-start mb-3">
+                   <span className="text-[9px] font-black text-yellow-700 uppercase tracking-widest">{item.group}</span>
+                   <div className={`w-2 h-2 rounded-full ${item.status === 'IMPERIAL_STRIKE' ? 'bg-green-500 shadow-[0_0_8px_green] animate-pulse' : 'bg-yellow-900/50'}`}></div>
                 </div>
-
-                <hr className="my-4 border-slate-100" />
-
-                {/* Card Bottom: Actions */}
-                <div className="flex gap-2">
-                  <button className={`flex-1 border rounded-xl py-2.5 text-[11px] font-black shadow-sm tracking-wider ${st.bg}`}>
-                    {st.text}
-                  </button>
-                  <button className="flex-1 bg-slate-50 border border-slate-200 text-slate-600 rounded-xl py-2.5 text-[11px] font-bold shadow-sm hover:bg-slate-100 transition-colors flex items-center justify-center gap-1.5">
-                    <History size={14} className="text-blue-500" /> สถิติ
-                  </button>
-                  <button className="flex-1 bg-slate-50 border border-slate-200 text-slate-600 rounded-xl py-2.5 text-[11px] font-bold shadow-sm hover:bg-slate-100 transition-colors flex items-center justify-center gap-1.5">
-                    <Calculator size={14} className="text-orange-500" /> คำนวณ
-                  </button>
+                <div className="text-xs font-bold text-white truncate mb-1">{item.name}</div>
+                <div className="text-2xl font-black text-white mb-2 font-mono flex items-baseline gap-1">
+                  {item.result} <span className="text-[10px] text-yellow-900 font-normal">/{item.bottom2}</span>
+                </div>
+                <div className="flex justify-between items-end border-t border-yellow-900/10 pt-3">
+                   <div className="text-[9px] font-bold text-blue-400">σ: {item.sigma}</div>
+                   <div className={`text-[10px] font-black ${item.status === 'IMPERIAL_STRIKE' ? 'text-green-500' : 'text-yellow-600'}`}>{item.conf}%</div>
                 </div>
               </div>
-            );
-          }) : (
-            <div className="py-24 text-center flex flex-col items-center justify-center text-slate-400 border-2 border-dashed border-slate-200 rounded-3xl">
-               <Search size={40} className="mb-4 text-slate-300" />
-               <p className="text-sm font-bold">ไม่พบสมรภูมิที่ค้นหา</p>
-            </div>
-          )}
-        </div>
+            ))}
+          </div>
+        )}
+
+        {selectedItem && activeTab !== 'daily' && (
+          <div className="h-full flex flex-col gap-6 animate-in slide-in-from-right duration-500 max-w-5xl mx-auto">
+             <div className="flex items-center gap-6 bg-yellow-900/10 p-8 rounded-[35px] border border-yellow-900/20 backdrop-blur-md">
+                <button onClick={() => setActiveTab('daily')} className="p-4 bg-black rounded-2xl border border-yellow-900/30 hover:bg-[#D4AF37] hover:text-black transition-all shadow-xl"><ArrowLeft size={20} /></button>
+                <div>
+                   <h2 className="text-3xl font-black text-white uppercase tracking-tighter leading-none mb-2">{selectedItem.name}</h2>
+                   <p className="text-[10px] text-yellow-700 font-bold uppercase tracking-[0.4em] leading-none">TARGET_ID: {selectedItem.id}</p>
+                </div>
+             </div>
+
+             {activeTab === 'analysis' && (
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="bg-black/60 border border-yellow-900/20 p-8 rounded-[40px] flex items-center gap-6 shadow-xl">
+                    <div className="p-5 bg-yellow-900/10 rounded-2xl border border-yellow-900/20 text-green-500"><Target size={32}/></div>
+                    <div><div className="text-[10px] text-yellow-800 font-black uppercase mb-2 tracking-widest">Confidence</div><div className="text-5xl font-black text-white">{selectedItem.conf}%</div></div>
+                  </div>
+                  <div className="bg-black/60 border border-yellow-900/20 p-8 rounded-[40px] flex items-center gap-6 shadow-xl">
+                    <div className="p-5 bg-yellow-900/10 rounded-2xl border border-yellow-900/20 text-blue-400"><Gauge size={32}/></div>
+                    <div><div className="text-[10px] text-yellow-800 font-black uppercase mb-2 tracking-widest">Volatility (σ)</div><div className="text-5xl font-black text-white">{selectedItem.sigma}</div></div>
+                  </div>
+                  <div className="md:col-span-2 p-10 bg-yellow-900/5 border-l-4 border-[#D4AF37] rounded-r-3xl italic text-yellow-100/60 text-sm leading-relaxed font-medium">
+                    "วิเคราะห์สัญญาณ: พิกัด {selectedItem.name} ออกรางวัลที่ {selectedItem.time} น. ระบบประเมินค่าความผันผวนอยู่ที่ระดับ {selectedItem.sigma} หากค่า Sigma ต่ำกว่า 21.0 ถือว่าปลอดภัยต่อการ Strike แนะนำให้บริหารหน้าตักตามสูตร Kelly Criterion"
+                  </div>
+               </div>
+             )}
+
+             {activeTab === 'calc' && (
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 h-[400px]">
+                 <div className="bg-black/60 border border-yellow-900/30 rounded-[40px] p-10 flex flex-col justify-center">
+                    <Calculator size={48} className="mb-6 text-yellow-500" />
+                    <h3 className="text-2xl font-black mb-8 tracking-tighter">Kelly Sizing</h3>
+                    <div className="text-[10px] text-yellow-700 font-black uppercase tracking-[0.3em] mb-4">Recommended Strike Force</div>
+                    <div className="text-8xl font-black text-green-500 tracking-tighter drop-shadow-[0_0_20px_rgba(34,197,94,0.4)]">
+                      {(parseFloat(selectedItem.conf) * 0.82).toFixed(1)}%
+                    </div>
+                 </div>
+                 <div className="flex flex-col gap-6">
+                    <div className="flex-1 bg-yellow-900/10 border border-yellow-900/20 rounded-[40px] flex flex-col items-center justify-center text-center">
+                       <TrendingUp size={40} className="mb-4 text-green-500" />
+                       <div className="text-[10px] text-yellow-700 font-black uppercase tracking-widest mb-2">Expected Value (E/X)</div>
+                       <div className="text-5xl font-black text-white">+{ (parseFloat(selectedItem.conf) * 0.95).toFixed(2) }</div>
+                    </div>
+                    <button className="bg-[#D4AF37] text-black font-black text-2xl py-6 rounded-[30px] hover:shadow-[0_0_30px_rgba(212,175,55,0.4)] active:scale-95 transition-all uppercase">
+                      INITIALIZE STRIKE
+                    </button>
+                 </div>
+               </div>
+             )}
+          </div>
+        )}
       </main>
 
-      {/* 📱 Bottom Navigation */}
-      <nav className="fixed bottom-0 w-full bg-white border-t border-slate-200 pt-3 pb-safe-offset-4 px-8 flex justify-between items-center z-50 shadow-[0_-10px_20px_rgba(0,0,0,0.02)]">
-        <NavIcon icon={<Home size={22} />} label="หน้าหลัก" active={activeNav === 'home'} onClick={() => setActiveNav('home')} />
-        <NavIcon icon={<BarChart2 size={22} />} label="สถิติ" active={activeNav === 'stats'} onClick={() => setActiveNav('stats')} />
-        <NavIcon icon={<ClipboardList size={22} />} label="รายการ" active={activeNav === 'list'} onClick={() => setActiveNav('list')} />
-        <NavIcon icon={<User size={22} />} label="โปรไฟล์" active={activeNav === 'profile'} onClick={() => setActiveNav('profile')} />
+      {/* 📑 Bottom Navigation */}
+      <nav className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-md bg-black/80 backdrop-blur-xl border border-yellow-900/30 rounded-[30px] shadow-2xl flex justify-around py-3 px-2 z-[60]">
+        <NavBtn icon={<LayoutGrid size={20}/>} label="ศูนย์รวม" active={activeTab === 'daily'} onClick={() => setActiveTab('daily')} />
+        <NavBtn icon={<BarChart3 size={20}/>} label="วิเคราะห์" active={activeTab === 'analysis'} onClick={() => selectedItem && setActiveTab('analysis')} disabled={!selectedItem} />
+        <NavBtn icon={<Calculator size={20}/>} label="คำนวณ" active={activeTab === 'calc'} onClick={() => selectedItem && setActiveTab('calc')} disabled={!selectedItem} />
       </nav>
 
       <style dangerouslySetInnerHTML={{ __html: `
-        @import url('https://fonts.googleapis.com/css2?family=Kanit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@700&display=swap');
-        body { font-family: 'Kanit', sans-serif; }
-        .font-mono { font-family: 'JetBrains+Mono', monospace; }
-        .pb-safe-offset-4 { padding-bottom: calc(env(safe-area-inset-bottom) + 16px); }
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&display=swap');
+        body { font-family: 'JetBrains+Mono', monospace; background: #030305; }
+        .custom-scrollbar::-webkit-scrollbar { width: 3px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #D4AF3733; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #D4AF3766; }
+        .animate-in { animation: fade-in 0.4s ease-out; }
+        @keyframes fade-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
       `}} />
     </div>
   );
 };
 
-const NavIcon = ({ icon, label, active, onClick }) => (
-  <button 
-    onClick={onClick} 
-    className={`flex flex-col items-center gap-1.5 w-16 transition-colors ${active ? 'text-blue-600' : 'text-slate-400 hover:text-slate-600'}`}
-  >
-    <div className={`${active ? 'scale-110' : ''} transition-transform`}>{icon}</div>
-    <span className="text-[10px] font-bold tracking-wide">{label}</span>
+const NavBtn = ({ icon, label, active, onClick, disabled }) => (
+  <button onClick={onClick} disabled={disabled} className={`flex items-center gap-2 px-6 py-2.5 rounded-[20px] text-[10px] font-black uppercase transition-all ${active ? 'bg-[#D4AF37] text-black shadow-lg' : 'text-yellow-700 hover:bg-white/5'} ${disabled && 'opacity-20 cursor-not-allowed'}`}>
+    {icon} <span className="hidden sm:inline">{label}</span>
   </button>
 );
 
