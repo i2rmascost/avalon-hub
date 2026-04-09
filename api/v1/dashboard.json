@@ -1,0 +1,211 @@
+{
+    "lotteries": [
+        {
+            "id": "DJI",
+            "name": "DJI",
+            "time": "14:56",
+            "top3": "401",
+            "bottom2": "54",
+            "risk": "OK",
+            "categoryId": "cat-normal"
+        },
+        {
+            "id": "NIKKEI",
+            "name": "NIKKEI",
+            "time": "14:56",
+            "top3": "410",
+            "bottom2": "21",
+            "risk": "OK",
+            "categoryId": "cat-normal"
+        },
+        {
+            "id": "SZSE",
+            "name": "SZSE",
+            "time": "14:56",
+            "top3": "122",
+            "bottom2": "65",
+            "risk": "OK",
+            "categoryId": "cat-normal"
+        },
+        {
+            "id": "HSI",
+            "name": "HSI",
+            "time": "14:56",
+            "top3": "***",
+            "bottom2": "**",
+            "risk": "WAIT",
+            "categoryId": "cat-normal"
+        },
+        {
+            "id": "TWSE",
+            "name": "TWSE",
+            "time": "14:56",
+            "top3": "784",
+            "bottom2": "71",
+            "risk": "OK",
+            "categoryId": "cat-normal"
+        },
+        {
+            "id": "SET",
+            "name": "SET",
+            "time": "14:56",
+            "top3": "117",
+            "bottom2": "64",
+            "risk": "OK",
+            "categoryId": "cat-normal"
+        },
+        {
+            "id": "SGX",
+            "name": "SGX",
+            "time": "14:56",
+            "top3": "862",
+            "bottom2": "26",
+            "risk": "OK",
+            "categoryId": "cat-normal"
+        },
+        {
+            "id": "SENSEX",
+            "name": "SENSEX",
+            "time": "14:56",
+            "top3": "192",
+            "bottom2": "30",
+            "risk": "OK",
+            "categoryId": "cat-normal"
+        },
+        {
+            "id": "EGX30",
+            "name": "EGX30",
+            "time": "14:56",
+            "top3": "616",
+            "bottom2": "65",
+            "risk": "OK",
+            "categoryId": "cat-normal"
+        },
+        {
+            "id": "MOEX",
+            "name": "MOEX",
+            "time": "14:56",
+            "top3": "257",
+            "bottom2": "21",
+            "risk": "OK",
+            "categoryId": "cat-normal"
+        },
+        {
+            "id": "DAX",
+            "name": "DAX",
+            "time": "14:56",
+            "top3": "755",
+            "bottom2": "25",
+            "risk": "OK",
+            "categoryId": "cat-normal"
+        },
+        {
+            "id": "FTSE",
+            "name": "FTSE",
+            "time": "14:56",
+            "top3": "413",
+            "bottom2": "57",
+            "risk": "OK",
+            "categoryId": "cat-normal"
+        },
+        {
+            "id": "HANOI_SPECIAL",
+            "name": "HANOI SPECIAL",
+            "time": "14:56",
+            "top3": "***",
+            "bottom2": "**",
+            "risk": "WAIT",
+            "categoryId": "cat-hanoi"
+        },
+        {
+            "id": "XSKT_MB",
+            "name": "XSKT MB",
+            "time": "14:56",
+            "top3": "649",
+            "bottom2": "83",
+            "risk": "OK",
+            "categoryId": "cat-hanoi"
+        },
+        {
+            "id": "XOSO_MN",
+            "name": "XOSO MN",
+            "time": "14:56",
+            "top3": "193",
+            "bottom2": "71",
+            "risk": "OK",
+            "categoryId": "cat-hanoi"
+        },
+        {
+            "id": "MINHNGOC_MT",
+            "name": "MINHNGOC MT",
+            "time": "14:56",
+            "top3": "794",
+            "bottom2": "12",
+            "risk": "OK",
+            "categoryId": "cat-hanoi"
+        },
+        {
+            "id": "LAO_VIP",
+            "name": "LAO VIP",
+            "time": "14:56",
+            "top3": "510",
+            "bottom2": "89",
+            "risk": "OK",
+            "categoryId": "cat-laos"
+        },
+        {
+            "id": "LAOS_5D",
+            "name": "LAOS 5D",
+            "time": "14:56",
+            "top3": "630",
+            "bottom2": "89",
+            "risk": "OK",
+            "categoryId": "cat-laos"
+        },
+        {
+            "id": "MAEKHONG_6D",
+            "name": "MAEKHONG 6D",
+            "time": "14:56",
+            "top3": "946",
+            "bottom2": "45",
+            "risk": "OK",
+            "categoryId": "cat-laos"
+        },
+        {
+            "id": "VIP_STAR",
+            "name": "VIP STAR",
+            "time": "14:56",
+            "top3": "***",
+            "bottom2": "**",
+            "risk": "WAIT",
+            "categoryId": "cat-vip"
+        },
+        {
+            "id": "VIP_GOLD",
+            "name": "VIP GOLD",
+            "time": "14:56",
+            "top3": "656",
+            "bottom2": "81",
+            "risk": "OK",
+            "categoryId": "cat-vip"
+        },
+        {
+            "id": "SPECIAL_99",
+            "name": "SPECIAL 99",
+            "time": "14:56",
+            "top3": "315",
+            "bottom2": "53",
+            "risk": "OK",
+            "categoryId": "cat-special"
+        },
+        {
+            "id": "VISA_WORLD",
+            "name": "VISA WORLD",
+            "time": "14:56",
+            "top3": "230",
+            "bottom2": "10",
+            "risk": "OK",
+            "categoryId": "cat-visa"
+        }
+    ]
+}
