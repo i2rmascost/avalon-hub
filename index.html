@@ -11,15 +11,21 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script type="module" src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     
-    <!-- นำเข้าสไตล์ชีตที่แยกออกมา -->
-    <link rel="stylesheet" href="style.css">
+    <!-- ฝัง Style ไว้ในไฟล์เดียวตามกฎ Single-File Mandate -->
+    <style>
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .toast-enter { opacity: 0; transform: translate(-50%, -1rem); }
+        .toast-enter-active { transition: all 0.3s ease-out; }
+        .toast-leave-active { transition: all 0.2s ease-in; opacity: 0; transform: translate(-50%, -1rem); }
+    </style>
 </head>
 <body class="bg-gray-900 text-white font-sans antialiased overflow-hidden" 
       x-data="avalonApp()" 
       @keydown.ctrl.r.prevent="!isSyncing && syncData()"
       @keydown.meta.r.prevent="!isSyncing && syncData()">
 
-    <!-- Toast Notification (แจ้งเตือนสถานะระบบ) -->
+    <!-- Toast Notification -->
     <div x-show="notification.show" 
          x-transition:enter="toast-enter-active" x-transition:enter-start="toast-enter"
          x-transition:leave="toast-leave-active" x-transition:leave-end="toast-enter"
@@ -98,7 +104,7 @@
                 <template x-if="lotteriesData.length > 0">
                     <div>
                         <template x-for="category in categories" :key="category.id">
-                            <div :id="'results-' + category.id" class="mb-8 pt-2">
+                            <div :id="'results-' + category.id" class="mb-8 pt-2" x-show="getLotteriesByCategory(category.id).length > 0">
                                 <h2 class="text-xl font-bold mb-4 border-b border-gray-700 pb-2 text-blue-300" x-text="category.name"></h2>
                                 
                                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -108,32 +114,24 @@
                                             <h3 class="text-md font-semibold text-gray-200 mb-2 truncate pr-12" x-text="lotto.name" :title="lotto.name"></h3>
                                             <div class="flex justify-between items-center bg-gray-900 p-2 rounded border border-gray-800">
                                                 <div class="text-center w-1/2 border-r border-gray-700">
-                                                    <div class="text-[10px] text-gray-500 uppercase tracking-wider mb-1">3 ตัวบน</div>
+                                                    <div class="text-[10px] text-gray-500 uppercase tracking-wider mb-1">เลขดิบ (จำลอง 3 ตัวบน)</div>
                                                     <div class="text-2xl font-bold text-red-400 font-mono tracking-widest" x-text="lotto.top3"></div>
                                                 </div>
                                                 <div class="text-center w-1/2">
-                                                    <div class="text-[10px] text-gray-500 uppercase tracking-wider mb-1">2 ตัวล่าง</div>
-                                                    <div class="text-2xl font-bold text-blue-400 font-mono tracking-widest" x-text="lotto.bottom2"></div>
+                                                    <div class="text-[10px] text-gray-500 uppercase tracking-wider mb-1">ความเสี่ยง (Risk)</div>
+                                                    <div class="text-lg font-bold text-blue-400 font-mono tracking-widest uppercase" x-text="lotto.bottom2"></div>
                                                 </div>
                                             </div>
-                                            <!-- ส่วนแสดงเลขไหลแบบย่อ (Hover เพื่อดูเพิ่มเติม) -->
+                                            <!-- ส่วนแสดงเลขไหล -->
                                             <div class="mt-3 flex justify-between items-center text-xs text-gray-400 border-t border-gray-700 pt-2">
                                                 <span class="flex items-center gap-1">
                                                     <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
                                                     ไหล: <span class="text-green-400 font-bold" x-text="lotto.flow_today.join(',')"></span>
                                                 </span>
-                                                <button class="hover:text-blue-300 transition focus:outline-none focus:underline" aria-label="ดูงวดย้อนหลัง">
-                                                    สถิติ &#9654;
-                                                </button>
                                             </div>
                                         </article>
                                     </template>
                                 </div>
-                                <template x-if="getLotteriesByCategory(category.id).length === 0">
-                                    <div class="text-center py-6 text-gray-600 bg-gray-800/30 rounded-lg border border-gray-700 border-dashed">
-                                        ไม่มีข้อมูลในหมวดหมู่นี้
-                                    </div>
-                                </template>
                             </div>
                         </template>
                     </div>
@@ -143,7 +141,7 @@
             <!-- TAB 2: เลขไหลแบบละเอียด -->
             <section id="panel-flows" x-show="activeTab === 'flows'" role="tabpanel" style="display: none;">
                 <template x-for="category in categories" :key="category.id">
-                    <div :id="'flows-' + category.id" class="mb-8 pt-2">
+                    <div :id="'flows-' + category.id" class="mb-8 pt-2" x-show="getLotteriesByCategory(category.id).length > 0">
                         <h2 class="text-xl font-bold mb-4 border-b border-gray-700 pb-2 text-green-300" x-text="category.name"></h2>
                         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                             <template x-for="lotto in getLotteriesByCategory(category.id)" :key="'flow-'+lotto.id">
@@ -151,7 +149,7 @@
                                     <span class="font-semibold text-gray-200" x-text="lotto.name"></span>
                                     <div class="flex gap-2">
                                         <div class="bg-gray-900 px-2 py-1 rounded border border-gray-700 text-center">
-                                            <div class="text-[9px] text-gray-500">รายวัน</div>
+                                            <div class="text-[9px] text-gray-500">ล่าสุด</div>
                                             <div class="text-sm font-bold text-green-400" x-text="lotto.flow_today.join('-')"></div>
                                         </div>
                                         <div class="bg-gray-900 px-2 py-1 rounded border border-gray-700 text-center">
@@ -179,11 +177,10 @@
                 lastSyncTime: '--:--',
                 notification: { show: false, message: '', type: 'success' },
                 
-                // [REQ: 2026-03-29] Configuration Protocols
+                // THE AXIOM CONFIGURATION PATCH
                 CONFIG: {
-                    TOKEN: 'AXIOM_SECURE_TOKEN_998877',
-                    PRIMARY_API: 'http://127.0.0.1:8000/api/v1/sync', // เครื่อง Python (Local)
-                    // เปลี่ยน YOUR_DEPLOY_ID เป็น ID ที่ได้จาก Google Apps Script
+                    TOKEN: 'AXIOM_SECURE_TOKEN_V3_2026',
+                    PRIMARY_API: 'http://127.0.0.1:8000/api/v1/dashboard', // ชี้เป้าไปที่ Dashboard Bridge ที่เพิ่งสร้าง
                     FALLBACK_API: 'https://script.google.com/macros/s/YOUR_DEPLOY_ID/exec'
                 },
 
@@ -200,7 +197,7 @@
                 
                 init() {
                     this.updateLastSyncTime();
-                    this.syncData(); // ดึงข้อมูลทันทีที่เปิดเว็บ
+                    this.syncData(); 
                     
                     setInterval(() => {
                         if(this.countdown > 0 && !this.isSyncing) {
@@ -227,7 +224,6 @@
                     setTimeout(() => { this.notification.show = false; }, 3500);
                 },
 
-                // THE AXIOM: HYBRID SYNC PROTOCOL
                 async syncData() {
                     if (this.isSyncing) return;
                     this.isSyncing = true;
@@ -235,14 +231,14 @@
                     try {
                         let incomingData = null;
                         
-                        // 1. พยายามดึงข้อมูลจากเครื่องหลัก (Python Localhost)
                         try {
                             const controller = new AbortController();
-                            const timeoutId = setTimeout(() => controller.abort(), 3000); // รอเครื่องหลัก 3 วินาที
+                            const timeoutId = setTimeout(() => controller.abort(), 8000); // เพิ่มเวลารอเป็น 8 วิ เผื่อ DB ทำงานหนัก
                             
                             const primaryResponse = await fetch(this.CONFIG.PRIMARY_API, {
                                 method: 'GET',
-                                headers: { 'x-api-token': this.CONFIG.TOKEN },
+                                // แก้ไขเชิงยุทธศาสตร์: เปลี่ยนจาก x-api-token เป็น x-token เพื่อให้ตรงกับ Middleware ของ FastAPI
+                                headers: { 'x-token': this.CONFIG.TOKEN }, 
                                 signal: controller.signal
                             });
                             
@@ -250,15 +246,14 @@
                             
                             if (primaryResponse.ok) {
                                 incomingData = await primaryResponse.json();
-                                this.showToast("อัปเดตจาก AVALON CORE (หลัก) สำเร็จ", "success");
+                                this.showToast("เชื่อมต่อแกนกลางมหาภพ AXIOM สำเร็จ", "success");
                             } else {
-                                throw new Error("Primary API Not OK");
+                                throw new Error(`Primary API Code: ${primaryResponse.status}`);
                             }
                         } catch (primaryErr) {
-                            console.warn("THE AXIOM: Primary Node Offline. Engaging Fallback Protocol...");
+                            console.warn("THE AXIOM: Local Node Offline/Timeout. Engaging Fallback...", primaryErr);
                             this.showToast("กำลังเชื่อมต่อระบบสำรอง (Cloud)...", "warning");
                             
-                            // 2. ระบบสำรอง (Google Apps Script)
                             const fallbackUrl = `${this.CONFIG.FALLBACK_API}?token=${this.CONFIG.TOKEN}`;
                             const fallbackResponse = await fetch(fallbackUrl);
                             
@@ -270,9 +265,8 @@
                             this.showToast("อัปเดตจากระบบสำรองสำเร็จ", "success");
                         }
 
-                        // ตรวจสอบความสมบูรณ์ของโครงสร้างข้อมูล
                         if (!incomingData || !Array.isArray(incomingData.lotteries)) {
-                            throw new Error('โครงสร้างข้อมูลขัดข้อง (Invalid Format)');
+                            throw new Error('โครงสร้างข้อมูลขัดข้อง (Schema Mismatch)');
                         }
                         
                         this.lotteriesData = incomingData.lotteries;
@@ -280,10 +274,10 @@
 
                     } catch (error) {
                         console.error("THE AXIOM: SYNC FATAL ERROR -", error.message);
-                        this.showToast(`ข้อผิดพลาดการซิงค์: ${error.message}`, "error");
+                        this.showToast(`การซิงค์ขัดข้อง: ${error.message}`, "error");
                     } finally {
                         this.isSyncing = false;
-                        this.countdown = 60; // รีเซ็ตเวลานับถอยหลัง
+                        this.countdown = 60;
                     }
                 },
 
