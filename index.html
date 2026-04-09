@@ -18,6 +18,11 @@
         .toast-enter { opacity: 0; transform: translate(-50%, -1rem); }
         .toast-enter-active { transition: all 0.3s ease-out; }
         .toast-leave-active { transition: all 0.2s ease-in; opacity: 0; transform: translate(-50%, -1rem); }
+        .ai-glow { animation: glow 2s ease-in-out infinite alternate; }
+        @keyframes glow {
+            from { box-shadow: 0 0 5px #3b82f6, 0 0 10px #3b82f6; }
+            to { box-shadow: 0 0 10px #8b5cf6, 0 0 20px #8b5cf6; }
+        }
     </style>
 </head>
 <body class="bg-gray-900 text-white font-sans antialiased overflow-hidden" 
@@ -37,7 +42,7 @@
 
     <!-- Header & Sync Control -->
     <header class="fixed top-0 w-full bg-gray-800 shadow-md z-50 flex justify-between items-center px-4 py-3 border-b border-gray-700">
-        <h1 class="text-xl font-bold text-blue-400 focus:outline-none" tabindex="0">AVALON HUB</h1>
+        <h1 class="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500 focus:outline-none" tabindex="0">AVALON HUB</h1>
         <div class="flex items-center gap-4 text-sm">
             <div class="hidden md:block text-gray-500" aria-label="เวลาอัปเดตล่าสุด">
                 อัปเดตล่าสุด: <span x-text="lastSyncTime" class="font-mono text-gray-300"></span>
@@ -45,6 +50,7 @@
             <div class="text-gray-400" aria-live="polite">
                 รีเฟรชใน: <span x-text="countdown" class="font-mono font-bold transition-colors" :class="countdown <= 10 ? 'text-red-400' : 'text-yellow-400'"></span> วิ.
             </div>
+            
             <button @click="!isSyncing && syncData()" :disabled="isSyncing" aria-label="ซิงค์ข้อมูลผลรางวัล" 
                     class="bg-blue-600 hover:bg-blue-500 disabled:bg-gray-700 px-3 py-1 rounded font-semibold transition flex items-center gap-1 focus:ring-2 focus:ring-white">
                 <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" :class="isSyncing ? 'animate-spin text-white' : 'text-white'" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -94,9 +100,9 @@
                     <div class="space-y-6">
                         <div class="h-8 bg-gray-800 rounded w-1/4 animate-pulse"></div>
                         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                            <div class="h-32 bg-gray-800 rounded-lg animate-pulse border border-gray-700"></div>
-                            <div class="h-32 bg-gray-800 rounded-lg animate-pulse border border-gray-700"></div>
-                            <div class="h-32 bg-gray-800 rounded-lg animate-pulse border border-gray-700"></div>
+                            <div class="h-40 bg-gray-800 rounded-lg animate-pulse border border-gray-700"></div>
+                            <div class="h-40 bg-gray-800 rounded-lg animate-pulse border border-gray-700"></div>
+                            <div class="h-40 bg-gray-800 rounded-lg animate-pulse border border-gray-700"></div>
                         </div>
                     </div>
                 </template>
@@ -109,25 +115,34 @@
                                 
                                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                                     <template x-for="lotto in getLotteriesByCategory(category.id)" :key="lotto.id">
-                                        <article class="bg-gray-800 rounded-lg p-4 border border-gray-700 shadow-sm relative overflow-hidden focus:outline-none focus:ring-2 focus:ring-blue-500 transition hover:bg-gray-750" tabindex="0">
+                                        <article class="bg-gray-800 rounded-lg p-4 border border-gray-700 shadow-sm relative overflow-hidden focus:outline-none focus:ring-2 focus:ring-blue-500 transition hover:bg-gray-750 flex flex-col" tabindex="0">
                                             <time :datetime="lotto.time" class="absolute top-0 right-0 bg-blue-600/80 backdrop-blur-sm text-xs px-2 py-1 rounded-bl-lg font-mono text-white" x-text="lotto.time"></time>
                                             <h3 class="text-md font-semibold text-gray-200 mb-2 truncate pr-12" x-text="lotto.name" :title="lotto.name"></h3>
-                                            <div class="flex justify-between items-center bg-gray-900 p-2 rounded border border-gray-800">
+                                            
+                                            <div class="flex justify-between items-center bg-gray-900 p-2 rounded border border-gray-800 mb-3">
                                                 <div class="text-center w-1/2 border-r border-gray-700">
                                                     <div class="text-[10px] text-gray-500 uppercase tracking-wider mb-1">เลขดิบ (จำลอง 3 ตัวบน)</div>
                                                     <div class="text-2xl font-bold text-red-400 font-mono tracking-widest" x-text="lotto.top3"></div>
                                                 </div>
                                                 <div class="text-center w-1/2">
                                                     <div class="text-[10px] text-gray-500 uppercase tracking-wider mb-1">ความเสี่ยง (Risk)</div>
-                                                    <div class="text-lg font-bold text-blue-400 font-mono tracking-widest uppercase" x-text="lotto.bottom2"></div>
+                                                    <div class="text-lg font-bold font-mono tracking-widest uppercase" 
+                                                         :class="{'text-red-500': lotto.bottom2 === 'CR', 'text-yellow-500': lotto.bottom2 === 'HI', 'text-blue-400': lotto.bottom2 === 'ST'}"
+                                                         x-text="lotto.bottom2"></div>
                                                 </div>
                                             </div>
-                                            <!-- ส่วนแสดงเลขไหล -->
-                                            <div class="mt-3 flex justify-between items-center text-xs text-gray-400 border-t border-gray-700 pt-2">
+
+                                            <div class="mt-auto flex justify-between items-center text-xs text-gray-400 border-t border-gray-700 pt-2">
                                                 <span class="flex items-center gap-1">
                                                     <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
                                                     ไหล: <span class="text-green-400 font-bold" x-text="lotto.flow_today.join(',')"></span>
                                                 </span>
+                                                
+                                                <!-- AI ANALYSIS BUTTON -->
+                                                <button @click="analyzeLottoWithAI(lotto)" 
+                                                        class="flex items-center gap-1 bg-gray-900 hover:bg-gray-700 text-purple-400 border border-purple-500/50 hover:border-purple-400 px-2 py-1 rounded transition duration-200 focus:outline-none focus:ring-1 focus:ring-purple-400">
+                                                    <span>วิเคราะห์ ✨</span>
+                                                </button>
                                             </div>
                                         </article>
                                     </template>
@@ -145,14 +160,19 @@
                         <h2 class="text-xl font-bold mb-4 border-b border-gray-700 pb-2 text-green-300" x-text="category.name"></h2>
                         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                             <template x-for="lotto in getLotteriesByCategory(category.id)" :key="'flow-'+lotto.id">
-                                <div class="bg-gray-800 rounded-lg p-3 border border-gray-700 flex items-center justify-between">
-                                    <span class="font-semibold text-gray-200" x-text="lotto.name"></span>
-                                    <div class="flex gap-2">
-                                        <div class="bg-gray-900 px-2 py-1 rounded border border-gray-700 text-center">
+                                <div class="bg-gray-800 rounded-lg p-3 border border-gray-700 flex flex-col gap-2 relative">
+                                    <div class="flex items-center justify-between">
+                                        <span class="font-semibold text-gray-200" x-text="lotto.name"></span>
+                                        <button @click="analyzeLottoWithAI(lotto)" class="text-[10px] bg-purple-900/50 hover:bg-purple-800 text-purple-300 border border-purple-700 px-2 py-0.5 rounded transition">
+                                            เจาะลึกด้วย AI ✨
+                                        </button>
+                                    </div>
+                                    <div class="flex gap-2 w-full justify-between mt-1">
+                                        <div class="bg-gray-900 px-2 py-1 rounded border border-gray-700 text-center flex-1">
                                             <div class="text-[9px] text-gray-500">ล่าสุด</div>
                                             <div class="text-sm font-bold text-green-400" x-text="lotto.flow_today.join('-')"></div>
                                         </div>
-                                        <div class="bg-gray-900 px-2 py-1 rounded border border-gray-700 text-center">
+                                        <div class="bg-gray-900 px-2 py-1 rounded border border-gray-700 text-center flex-1">
                                             <div class="text-[9px] text-gray-500">อดีต</div>
                                             <div class="text-sm font-bold text-blue-400" x-text="lotto.flow_history.join('-')"></div>
                                         </div>
@@ -167,6 +187,51 @@
         </main>
     </div>
 
+    <!-- AI Modal Overlay -->
+    <div x-show="aiModal.show" style="display: none;"
+         class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0">
+        
+        <div class="bg-gray-800 border border-purple-500/50 shadow-2xl rounded-xl max-w-md w-full overflow-hidden flex flex-col"
+             @click.outside="closeAIModal()">
+            <!-- Modal Header -->
+            <div class="bg-gradient-to-r from-gray-900 to-gray-800 p-4 border-b border-gray-700 flex justify-between items-center">
+                <h3 class="text-lg font-bold text-purple-400 flex items-center gap-2">
+                    <span class="animate-pulse">✨</span> 
+                    <span x-text="aiModal.title">The Axiom Oracle</span>
+                </h3>
+                <button @click="closeAIModal()" class="text-gray-400 hover:text-white transition focus:outline-none">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            
+            <!-- Modal Body -->
+            <div class="p-5 min-h-[120px] max-h-[60vh] overflow-y-auto bg-gray-900 relative">
+                <!-- Loading State -->
+                <div x-show="aiModal.loading" class="flex flex-col items-center justify-center h-full space-y-3 py-6">
+                    <div class="w-10 h-10 border-4 border-purple-500 border-t-transparent rounded-full animate-spin ai-glow"></div>
+                    <p class="text-sm text-purple-300 animate-pulse">กำลังประมวลผลดวงดาวและเส้นสายสถิติ...</p>
+                </div>
+                
+                <!-- Content State -->
+                <div x-show="!aiModal.loading" class="text-gray-200 text-sm leading-relaxed whitespace-pre-wrap" x-text="aiModal.content">
+                </div>
+            </div>
+            
+            <!-- Modal Footer -->
+            <div class="bg-gray-800 p-3 border-t border-gray-700 flex justify-end">
+                <button @click="closeAIModal()" class="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-gray-500">
+                    ปิดหน้าต่าง
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Core Application Logic -->
     <script>
         document.addEventListener('alpine:init', () => {
@@ -177,10 +242,18 @@
                 lastSyncTime: '--:--',
                 notification: { show: false, message: '', type: 'success' },
                 
+                // AI State
+                aiModal: {
+                    show: false,
+                    title: 'วิเคราะห์แนวโน้ม',
+                    content: '',
+                    loading: false
+                },
+                
                 // THE AXIOM CONFIGURATION PATCH
                 CONFIG: {
                     TOKEN: 'AXIOM_SECURE_TOKEN_V3_2026',
-                    PRIMARY_API: 'http://127.0.0.1:8000/api/v1/dashboard', // ชี้เป้าไปที่ Dashboard Bridge ที่เพิ่งสร้าง
+                    PRIMARY_API: 'http://127.0.0.1:8000/api/v1/dashboard', 
                     FALLBACK_API: 'https://script.google.com/macros/s/YOUR_DEPLOY_ID/exec'
                 },
 
@@ -200,9 +273,9 @@
                     this.syncData(); 
                     
                     setInterval(() => {
-                        if(this.countdown > 0 && !this.isSyncing) {
+                        if(this.countdown > 0 && !this.isSyncing && !this.aiModal.show) {
                             this.countdown--;
-                        } else if (this.countdown === 0 && !this.isSyncing) {
+                        } else if (this.countdown === 0 && !this.isSyncing && !this.aiModal.show) {
                             this.syncData();
                         }
                     }, 1000);
@@ -230,39 +303,60 @@
                     
                     try {
                         let incomingData = null;
+                        let useMockData = false;
                         
                         try {
                             const controller = new AbortController();
-                            const timeoutId = setTimeout(() => controller.abort(), 8000); // เพิ่มเวลารอเป็น 8 วิ เผื่อ DB ทำงานหนัก
+                            const timeoutId = setTimeout(() => controller.abort(), 5000); 
                             
+                            // ทดสอบจับ Error ล่วงหน้าไม่ให้หลุดออกไปที่ Console
                             const primaryResponse = await fetch(this.CONFIG.PRIMARY_API, {
                                 method: 'GET',
-                                // แก้ไขเชิงยุทธศาสตร์: เปลี่ยนจาก x-api-token เป็น x-token เพื่อให้ตรงกับ Middleware ของ FastAPI
                                 headers: { 'x-token': this.CONFIG.TOKEN }, 
                                 signal: controller.signal
-                            });
+                            }).catch(() => null); 
                             
                             clearTimeout(timeoutId);
                             
-                            if (primaryResponse.ok) {
+                            if (primaryResponse && primaryResponse.ok) {
                                 incomingData = await primaryResponse.json();
                                 this.showToast("เชื่อมต่อแกนกลางมหาภพ AXIOM สำเร็จ", "success");
                             } else {
-                                throw new Error(`Primary API Code: ${primaryResponse.status}`);
+                                throw new Error("Primary API Offline");
                             }
                         } catch (primaryErr) {
-                            console.warn("THE AXIOM: Local Node Offline/Timeout. Engaging Fallback...", primaryErr);
-                            this.showToast("กำลังเชื่อมต่อระบบสำรอง (Cloud)...", "warning");
+                            console.warn("THE AXIOM: Local Node Offline/Timeout. Engaging Fallback...");
                             
-                            const fallbackUrl = `${this.CONFIG.FALLBACK_API}?token=${this.CONFIG.TOKEN}`;
-                            const fallbackResponse = await fetch(fallbackUrl);
-                            
-                            if (!fallbackResponse.ok) throw new Error(`Fallback HTTP ${fallbackResponse.status}`);
-                            
-                            incomingData = await fallbackResponse.json();
-                            if (incomingData.error) throw new Error(incomingData.error);
-                            
-                            this.showToast("อัปเดตจากระบบสำรองสำเร็จ", "success");
+                            try {
+                                const fallbackUrl = `${this.CONFIG.FALLBACK_API}?token=${this.CONFIG.TOKEN}`;
+                                const fallbackResponse = await fetch(fallbackUrl).catch(() => null);
+                                
+                                if (fallbackResponse && fallbackResponse.ok) {
+                                    incomingData = await fallbackResponse.json();
+                                    if (incomingData.error) throw new Error(incomingData.error);
+                                    this.showToast("อัปเดตจากระบบสำรองสำเร็จ", "success");
+                                } else {
+                                    throw new Error("Fallback API Offline");
+                                }
+                            } catch (fallbackErr) {
+                                console.warn("THE AXIOM: All APIs Offline. Switching to Mock Data mode.");
+                                useMockData = true;
+                            }
+                        }
+
+                        // หากหาเซิร์ฟเวอร์ไม่ได้เลย ให้ใช้โหมดข้อมูลจำลองเพื่อป้องกัน Error และทดสอบ UI ได้
+                        if (useMockData) {
+                            this.showToast("ออฟไลน์: กำลังใช้ข้อมูลจำลอง (Mock Data)", "warning");
+                            incomingData = {
+                                lotteries: [
+                                    { id: 'dji', categoryId: 'cat-normal', time: '03:20', name: 'ดาวโจนส์', top3: '456', bottom2: 'HI', flow_today: ['12', '34', '56'], flow_history: ['78', '90'] },
+                                    { id: 'goverment', categoryId: 'cat-others', time: '16:00', name: 'รัฐบาลไทย', top3: '999', bottom2: 'CR', flow_today: ['11', '22', '33'], flow_history: ['44', '55'] },
+                                    { id: 'laosdevelops', categoryId: 'cat-laos', time: '20:30', name: 'ลาวพัฒนา', top3: '123', bottom2: 'ST', flow_today: ['01', '02', '03'], flow_history: ['04', '05'] },
+                                    { id: 'hanoivisa', categoryId: 'cat-visa', time: '18:30', name: 'ฮานอยวีซ่า', top3: '777', bottom2: 'HI', flow_today: ['99', '88', '77'], flow_history: ['66', '55'] },
+                                    { id: 'nikkei', categoryId: 'cat-normal', time: '13:00', name: 'นิเคอิ บ่าย', top3: '888', bottom2: 'ST', flow_today: ['10', '20', '30'], flow_history: ['40', '50'] },
+                                    { id: 'magnum', categoryId: 'cat-others', time: '18:00', name: 'มาเลย์ Magnum', top3: '555', bottom2: 'CR', flow_today: ['00', '11', '22'], flow_history: ['33', '44'] }
+                                ]
+                            };
                         }
 
                         if (!incomingData || !Array.isArray(incomingData.lotteries)) {
@@ -273,7 +367,7 @@
                         this.updateLastSyncTime();
 
                     } catch (error) {
-                        console.error("THE AXIOM: SYNC FATAL ERROR -", error.message);
+                        console.error("THE AXIOM: SYNC ERROR -", error.message);
                         this.showToast(`การซิงค์ขัดข้อง: ${error.message}`, "error");
                     } finally {
                         this.isSyncing = false;
@@ -287,6 +381,74 @@
                     const container = document.getElementById('main-scroll-area');
                     if (element && container) {
                         container.scrollTo({ top: element.offsetTop - 120, behavior: 'smooth' });
+                    }
+                },
+
+                // --- GEMINI API INTEGRATION (THE AXIOM ORACLE) ---
+                closeAIModal() {
+                    this.aiModal.show = false;
+                    if(this.countdown < 5) this.countdown = 5; 
+                },
+
+                async fetchGeminiWithRetry(prompt) {
+                    const apiKey = ""; // API Key injects at runtime
+                    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+                    
+                    const payload = {
+                        contents: [{ parts: [{ text: prompt }] }],
+                        systemInstruction: { 
+                            parts: [{ 
+                                text: "คุณคือ 'Axiom Oracle' ผู้เชี่ยวชาญด้านการวิเคราะห์สถิติตัวเลข หวย และหุ้น ตอบกลับด้วยภาษาไทยที่เป็นมืออาชีพ น่าตื่นเต้น และเข้าใจง่าย ให้คำแนะนำว่าแนวโน้มสถิตินี้เป็นอย่างไร ผันผวนหรือไม่ หรือมีโอกาสไปในทิศทางไหน (ห้ามยืนยันผล 100% ให้ใช้คำว่า มีโอกาส หรือ มีแนวโน้ม) ตอบให้สั้น กระชับ ไม่เกิน 3-4 ประโยค" 
+                            }] 
+                        }
+                    };
+
+                    const delays = [1000, 2000, 4000, 8000, 16000];
+                    
+                    for (let i = 0; i < delays.length + 1; i++) {
+                        try {
+                            const response = await fetch(url, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(payload)
+                            });
+                            
+                            if (!response.ok) throw new Error(`HTTP Error ${response.status}`);
+                            
+                            const data = await response.json();
+                            return data.candidates?.[0]?.content?.parts?.[0]?.text || "ดวงดาวสับสน ไม่สามารถดึงคำทำนายได้ในขณะนี้";
+                        } catch (err) {
+                            console.warn(`[Axiom Oracle] Retrying connection (Attempt ${i + 1})...`);
+                            if (i === delays.length) throw err;
+                            await new Promise(res => setTimeout(res, delays[i]));
+                        }
+                    }
+                },
+
+                async analyzeLottoWithAI(lotto) {
+                    this.aiModal.title = lotto.name;
+                    this.aiModal.content = '';
+                    this.aiModal.loading = true;
+                    this.aiModal.show = true;
+
+                    const prompt = `
+                        ช่วยวิเคราะห์แนวโน้มชุดข้อมูลของ "${lotto.name}" ในวันนี้หน่อยครับ:
+                        - ดัชนี/เลขจำลอง: ${lotto.top3}
+                        - ระดับความเสี่ยง (Z-Score ประเมิน): ${lotto.bottom2}
+                        - เลขไหล (Flow) วันนี้: ${lotto.flow_today.join(', ') || 'ไม่มีข้อมูล'}
+                        - เลขไหล (Flow) อดีตย้อนหลัง: ${lotto.flow_history.join(', ') || 'ไม่มีข้อมูล'}
+                        
+                        สถิตินี้บอกอะไรเราบ้าง? ทิศทางน่าจะไปทางไหน? ช่วยวิเคราะห์สั้นๆ กระชับๆ ครับ
+                    `;
+
+                    try {
+                        const result = await this.fetchGeminiWithRetry(prompt);
+                        this.aiModal.content = result;
+                    } catch (error) {
+                        console.error("Gemini API Error:", error);
+                        this.aiModal.content = "ขออภัย เกิดสัญญาณแทรกซ้อนจากการเชื่อมต่อ AI (API Error) โปรดลองใหม่อีกครั้งในภายหลัง";
+                    } finally {
+                        this.aiModal.loading = false;
                     }
                 }
             }));
