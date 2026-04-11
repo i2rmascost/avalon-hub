@@ -1,273 +1,359 @@
 <!DOCTYPE html>
-<html lang="th">
+<html lang="th" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Avalon Hub - ระบบบัญชาการสถิติและผลรางวัลระดับองค์กร">
-    <meta name="theme-color" content="#0f172a">
-    <title>Avalon Hub - Master Dashboard</title>
-    
+    <title>Avalon Hub - Unified Command Center</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;600&display=swap" rel="stylesheet">
-    
-    <style>
-        body { font-family: 'Prompt', sans-serif; background-color: #0f172a; color: #f8fafc; }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); }
-        .ai-glow { box-shadow: 0 0 20px rgba(147, 51, 234, 0.5); animation: pulse 2s infinite; }
-        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
-        .pending-pulse { animation: pulse-opacity 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
-        @keyframes pulse-opacity { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
-        
-        /* Category Colors from Old Version */
-        .cat-normal { border-left: 4px solid #3b82f6; }
-        .cat-hanoi { border-left: 4px solid #ef4444; }
-        .cat-laos { border-left: 4px solid #10b981; }
-        .cat-vip { border-left: 4px solid #f59e0b; }
-        .cat-special { border-left: 4px solid #8b5cf6; }
-        .cat-visa { border-left: 4px solid #ec4899; }
-        .cat-others { border-left: 4px solid #64748b; }
-    </style>
-</head>
-<body class="antialiased overflow-hidden" x-data="avalonApp()">
-
-    <!-- Header (Hybrid Design) -->
-    <header class="fixed top-0 w-full glass z-50 flex justify-between items-center px-6 py-4 border-b border-white/10">
-        <div class="flex items-center gap-4">
-            <h1 class="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">AVALON HUB</h1>
-            <span class="hidden md:inline text-xs text-slate-500 font-mono">v1.5 HYBRID</span>
-        </div>
-        
-        <div class="flex items-center gap-3">
-            <div class="hidden lg:block text-xs text-slate-400">
-                อัปเดตล่าสุด: <span x-text="lastUpdate" class="font-mono text-purple-400"></span>
-            </div>
-            <button @click="fetchData()" :disabled="isSyncing" 
-                    class="bg-purple-600 hover:bg-purple-500 disabled:bg-slate-800 px-4 py-2 rounded-lg text-sm font-semibold transition flex items-center gap-2 shadow-lg shadow-purple-900/20">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" :class="isSyncing ? 'animate-spin' : ''" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-                <span x-text="isSyncing ? 'กำลังซิงค์...' : 'อัปเดตข้อมูล'"></span>
-            </button>
-        </div>
-    </header>
-
-    <!-- Tab Navigation -->
-    <nav class="fixed top-[73px] w-full bg-slate-900/80 backdrop-blur-md z-40 border-b border-white/5">
-        <div class="flex justify-center gap-8 py-3">
-            <button @click="activeTab = 'results'" :class="activeTab === 'results' ? 'text-blue-400 border-blue-400' : 'text-slate-500 border-transparent'" class="pb-1 text-sm font-semibold border-b-2 transition">ผลรางวัลแบ่งกลุ่ม</button>
-            <button @click="activeTab = 'timeline'" :class="activeTab === 'timeline' ? 'text-yellow-400 border-yellow-400' : 'text-slate-500 border-transparent'" class="pb-1 text-sm font-semibold border-b-2 transition">กระดานเวลา ⏳</button>
-            <button @click="activeTab = 'analysis'" :class="activeTab === 'analysis' ? 'text-green-400 border-green-400' : 'text-slate-500 border-transparent'" class="pb-1 text-sm font-semibold border-b-2 transition">วิเคราะห์สถิติ</button>
-        </div>
-    </nav>
-
-    <!-- Main Content Area -->
-    <div class="flex pt-[125px] h-screen overflow-hidden">
-        <!-- Sidebar (From Old Version) -->
-        <aside x-show="activeTab === 'results'" class="w-40 md:w-56 flex-shrink-0 glass border-r border-white/5 h-full overflow-y-auto no-scrollbar pb-32">
-            <div class="p-4 text-xs font-bold text-slate-500 uppercase tracking-widest">หมวดหมู่</div>
-            <ul class="px-2 space-y-1">
-                <template x-for="(label, key) in categories" :key="key">
-                    <li>
-                        <button @click="activeCategory = key" 
-                                :class="activeCategory === key ? 'bg-purple-600/20 text-purple-400 border-l-4 border-purple-500' : 'text-slate-400 hover:bg-white/5 border-l-4 border-transparent'"
-                                class="w-full text-left px-4 py-3 text-sm rounded-r-lg transition truncate font-medium" 
-                                x-text="label"></button>
-                    </li>
-                </template>
-            </ul>
-        </aside>
-
-        <!-- Main Dashboard -->
-        <main class="flex-1 overflow-y-auto p-6 pb-32 scroll-smooth" id="main-scroll-area">
-            
-            <!-- Results Grid (Hybrid Style) -->
-            <section x-show="activeTab === 'results'" class="space-y-6">
-                <div class="flex justify-between items-end mb-4">
-                    <h2 class="text-2xl font-bold text-white" x-text="categories[activeCategory]"></h2>
-                    <span class="text-xs text-slate-500" x-text="filteredLotteries.length + ' รายการ'"></span>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                    <template x-for="item in filteredLotteries" :key="item.id">
-                        <div :class="item.categoryId" class="glass p-5 rounded-2xl hover:scale-[1.02] transition cursor-pointer group relative overflow-hidden">
-                            <div class="absolute top-0 right-0 p-2 opacity-20 group-hover:opacity-100 transition">
-                                <span class="text-2xl" x-text="getFlag(item.name)"></span>
-                            </div>
-                            
-                            <div class="flex justify-between items-start mb-3">
-                                <span class="text-[10px] font-bold text-slate-500 uppercase tracking-tighter" x-text="item.id"></span>
-                                <span :class="item.risk === 'OK' ? 'text-green-400' : 'text-yellow-400'" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-900/50" x-text="item.risk"></span>
-                            </div>
-                            
-                            <h3 class="text-lg font-bold mb-5 text-slate-200 truncate pr-8" x-text="item.name"></h3>
-                            
-                            <div class="grid grid-cols-2 gap-3">
-                                <div class="bg-slate-900/80 p-3 rounded-xl border border-white/5 text-center">
-                                    <div class="text-[10px] text-slate-500 uppercase mb-1">3 ตัวบน</div>
-                                    <div class="text-2xl font-mono font-bold text-purple-400" :class="item.top3 === '***' ? 'pending-pulse text-slate-700' : ''" x-text="item.top3"></div>
-                                </div>
-                                <div class="bg-slate-900/80 p-3 rounded-xl border border-white/5 text-center">
-                                    <div class="text-[10px] text-slate-500 uppercase mb-1">2 ตัวล่าง</div>
-                                    <div class="text-2xl font-mono font-bold text-pink-400" :class="item.bottom2 === '**' ? 'pending-pulse text-slate-700' : ''" x-text="item.bottom2"></div>
-                                </div>
-                            </div>
-                            
-                            <div class="mt-5 pt-4 border-t border-white/5 flex justify-between items-center">
-                                <div class="flex items-center gap-2">
-                                    <svg class="w-3 h-3 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                    <span class="text-[10px] text-slate-500 font-mono" x-text="item.time"></span>
-                                </div>
-                                <button class="text-[10px] font-bold text-purple-500 hover:text-purple-400 transition uppercase tracking-widest">Details</button>
-                            </div>
-                        </div>
-                    </template>
-                </div>
-            </section>
-
-            <!-- Timeline View (From Old Version) -->
-            <section x-show="activeTab === 'timeline'" class="max-w-4xl mx-auto">
-                <div class="glass rounded-2xl overflow-hidden border border-white/10 shadow-2xl">
-                    <div class="bg-gradient-to-r from-slate-800 to-slate-900 p-4 flex items-center font-bold text-sm text-slate-300 border-b border-white/5">
-                        <div class="w-20">เวลา</div>
-                        <div class="flex-1">รายการ</div>
-                        <div class="w-24 text-center">บน</div>
-                        <div class="w-24 text-center">ล่าง</div>
-                    </div>
-                    <div class="divide-y divide-white/5">
-                        <template x-for="lotto in sortedLotteries" :key="'tl-'+lotto.id">
-                            <div class="flex items-center p-4 hover:bg-white/5 transition group">
-                                <div class="w-20 font-mono text-xs text-yellow-500" x-text="lotto.time"></div>
-                                <div class="flex-1 flex items-center gap-3">
-                                    <span x-text="getFlag(lotto.name)"></span>
-                                    <span class="font-semibold text-slate-200 text-sm" x-text="lotto.name"></span>
-                                </div>
-                                <div class="w-24 text-center font-mono font-bold text-purple-400" x-text="lotto.top3"></div>
-                                <div class="w-24 text-center font-mono font-bold text-pink-400" x-text="lotto.bottom2"></div>
-                            </div>
-                        </template>
-                    </div>
-                </div>
-            </section>
-        </main>
-    </div>
-
-    <!-- Floating AI Icon -->
-    <div id="ai-icon"
-         class="fixed bottom-8 right-8 w-16 h-16 bg-gradient-to-br from-purple-600 to-blue-600 rounded-full shadow-2xl flex items-center justify-center cursor-pointer ai-glow z-50 text-3xl hover:scale-110 transition-transform"
-         @click="showAIGuide = true">
-      🤖
-    </div>
-
-    <!-- AI Guide Modal -->
-    <div x-show="showAIGuide" 
-         x-transition:enter="transition ease-out duration-300"
-         x-transition:enter-start="opacity-0 translate-y-8"
-         x-transition:enter-end="opacity-100 translate-y-0"
-         class="fixed bottom-28 right-8 z-[60] w-full max-w-sm">
-        <div class="glass rounded-3xl overflow-hidden shadow-2xl border border-purple-500/30">
-            <div class="bg-gradient-to-r from-purple-600 to-blue-600 p-5 flex justify-between items-center">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center text-xl">🤖</div>
-                    <div>
-                        <h2 class="font-bold text-white leading-tight">Avalon AI</h2>
-                        <p class="text-[10px] text-white/70 uppercase tracking-widest">Online Assistant</p>
-                    </div>
-                </div>
-                <button @click="showAIGuide = false" class="text-white/50 hover:text-white transition text-xl">✕</button>
-            </div>
-            <div class="p-6 space-y-4 bg-slate-900/90">
-                <div class="bg-slate-800/50 p-4 rounded-2xl rounded-tl-none border border-white/5">
-                    <p class="text-sm text-slate-300 leading-relaxed">สวัสดีครับ! ผมคือ AI ผู้ช่วยประจำ Avalon Hub พร้อมวิเคราะห์ข้อมูลและเก็งเทรนด์ให้คุณแล้วครับ</p>
-                </div>
-                <div class="grid grid-cols-1 gap-2">
-                    <button class="text-left p-3 rounded-xl bg-white/5 hover:bg-purple-600/20 border border-white/5 text-xs text-slate-300 transition flex items-center gap-3">
-                        <span class="text-lg">📊</span> วิเคราะห์แนวโน้มวันนี้
-                    </button>
-                    <button class="text-left p-3 rounded-xl bg-white/5 hover:bg-purple-600/20 border border-white/5 text-xs text-slate-300 transition flex items-center gap-3">
-                        <span class="text-lg">🎯</span> เก็งเทรนด์เลขไหล
-                    </button>
-                    <button class="text-left p-3 rounded-xl bg-white/5 hover:bg-purple-600/20 border border-white/5 text-xs text-slate-300 transition flex items-center gap-3">
-                        <span class="text-lg">⚙️</span> ตรวจสอบสถานะระบบ
-                    </button>
-                </div>
-            </div>
-            <div class="p-4 bg-slate-900 border-t border-white/5">
-                <div class="relative">
-                    <input type="text" placeholder="พิมพ์คำถามของคุณ..." class="w-full bg-slate-800 border border-white/10 rounded-2xl px-5 py-3 text-sm focus:outline-none focus:border-purple-500 transition text-slate-200">
-                    <button class="absolute right-3 top-2.5 text-purple-500 hover:text-purple-400">
-                        <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"></path></svg>
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
+    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;600;800&display=swap" rel="stylesheet">
     <script>
-        function avalonApp() {
-            return {
-                lotteries: [],
-                activeTab: 'results',
-                activeCategory: 'all',
-                showAIGuide: false,
-                isSyncing: false,
-                lastUpdate: '--:--',
-                categories: {
-                    all: 'ทั้งหมด',
-                    'cat-normal': 'หุ้นต่างประเทศ',
-                    'cat-hanoi': 'ฮานอย / เวียดนาม',
-                    'cat-laos': 'ลาว / แม่โขง',
-                    'cat-vip': 'VIP / พิเศษ',
-                    'cat-special': 'หวยชุดพิเศษ',
-                    'cat-visa': 'VISA / ทั่วโลก'
-                },
-                init() {
-                    this.fetchData();
-                    setInterval(() => this.fetchData(), 60000);
-                },
-                async fetchData() {
-                    this.isSyncing = true;
-                    try {
-                        // รองรับทั้ง Local API และ Static JSON บน GitHub Pages
-                        const url = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
-                                    ? '/api/v1/dashboard' 
-                                    : 'api/v1/dashboard.json';
-                        const res = await fetch(url);
-                        const data = await res.json();
-                        this.lotteries = data.lotteries;
-                        this.lastUpdate = new Date().toLocaleTimeString();
-                    } catch (e) {
-                        console.error("Fetch error:", e);
-                    } finally {
-                        setTimeout(() => { this.isSyncing = false; }, 800);
-                    }
-                },
-                get filteredLotteries() {
-                    if (this.activeCategory === 'all') return this.lotteries;
-                    return this.lotteries.filter(item => item.categoryId === this.activeCategory);
-                },
-                get sortedLotteries() {
-                    return [...this.lotteries].sort((a, b) => a.time.localeCompare(b.time));
-                },
-                getFlag(name) {
-                    const n = name.toLowerCase();
-                    if (n.includes('hanoi')) return '🇻🇳';
-                    if (n.includes('lao')) return '🇱🇦';
-                    if (n.includes('set')) return '🇹🇭';
-                    if (n.includes('dji')) return '🇺🇸';
-                    if (n.includes('nikkei')) return '🇯🇵';
-                    if (n.includes('hsi')) return '🇭🇰';
-                    if (n.includes('ftse')) return '🇬🇧';
-                    if (n.includes('dax')) return '🇩🇪';
-                    if (n.includes('szse')) return '🇨🇳';
-                    if (n.includes('twse')) return '🇹🇼';
-                    if (n.includes('sgx')) return '🇸🇬';
-                    return '🎲';
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Prompt', 'sans-serif'] },
+                    colors: { dark: '#020617', card: '#0f172a', accent: '#38bdf8' }
                 }
             }
         }
+    </script>
+    <style>
+        body { background-color: #020617; color: #f8fafc; }
+        .glass { background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.05); }
+        .banker-glow { box-shadow: 0 0 30px rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.3); }
+        .challenger-glow { box-shadow: 0 0 30px rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+    </style>
+</head>
+<body class="min-h-screen">
+
+    <div x-data="avalonApp()" x-init="init()" class="max-w-7xl mx-auto p-4 md:p-6">
+        
+        <!-- Header & Tab Navigation -->
+        <header class="flex flex-col md:flex-row justify-between items-center mb-8 glass rounded-2xl p-4 shadow-lg">
+            <div>
+                <h1 class="text-2xl md:text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-accent to-purple-500 tracking-tight">
+                    AVALON HUB
+                </h1>
+                <p class="text-sm text-gray-400">ระบบบัญชาการสถิติ 130 พิกัดระดับองค์กร</p>
+            </div>
+            
+            <div class="flex gap-2 mt-4 md:mt-0 bg-gray-900 p-1 rounded-lg border border-gray-800">
+                <button @click="activeTab = 'public'" 
+                        :class="activeTab === 'public' ? 'bg-gray-800 text-white shadow' : 'text-gray-400 hover:text-white'" 
+                        class="px-4 py-2 rounded-md text-sm font-semibold transition-all">
+                    🌐 Dashboard หลัก
+                </button>
+                <button @click="openPrivateTab()" 
+                        :class="activeTab === 'private' ? 'bg-purple-900/50 text-purple-300 shadow border border-purple-500/30' : 'text-gray-400 hover:text-purple-400'" 
+                        class="px-4 py-2 rounded-md text-sm font-semibold transition-all flex items-center gap-2">
+                    <span x-show="!isAiUnlocked">🔒</span>
+                    <span x-show="isAiUnlocked">🤖</span>
+                    Private AI
+                </button>
+            </div>
+        </header>
+
+        <!-- ========================================== -->
+        <!-- TAB 1: PUBLIC DASHBOARD                    -->
+        <!-- ========================================== -->
+        <div x-show="activeTab === 'public'" x-transition.opacity.duration.300ms>
+            
+            <!-- Stats Overview -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <div class="glass p-4 rounded-xl text-center shadow border-b-2 border-b-gray-600">
+                    <div class="text-xs text-gray-400">เป้าหมายทั้งหมด</div>
+                    <div class="text-2xl font-bold text-white" x-text="feedData.length">0</div>
+                </div>
+                <div class="glass p-4 rounded-xl text-center shadow border-b-2 border-b-green-500">
+                    <div class="text-xs text-gray-400">ออกผลแล้ววันนี้</div>
+                    <div class="text-2xl font-bold text-green-400" x-text="feedData.filter(i => i.status.code === 'PUBLISHED').length">0</div>
+                </div>
+                <div class="glass p-4 rounded-xl text-center shadow border-b-2 border-b-red-500">
+                    <div class="text-xs text-gray-400">กำลังประมวลผล</div>
+                    <div class="text-2xl font-bold text-red-400 animate-pulse" x-text="feedData.filter(i => i.status.code === 'LIVE').length">0</div>
+                </div>
+                <div class="glass p-4 rounded-xl text-center shadow border-b-2 border-b-yellow-500">
+                    <div class="text-xs text-gray-400">รอผลรอบถัดไป</div>
+                    <div class="text-2xl font-bold text-yellow-400" x-text="feedData.filter(i => i.status.code === 'UPCOMING').length">0</div>
+                </div>
+            </div>
+
+            <!-- Search -->
+            <div class="mb-6">
+                <input type="text" x-model="searchQuery" placeholder="ค้นหาชื่อหวย, หุ้น หรือเวลา..." class="w-full md:w-96 bg-gray-900 border border-gray-700 text-white text-sm rounded-lg focus:ring-accent focus:border-accent block p-3 outline-none placeholder-gray-600">
+            </div>
+
+            <!-- Data Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                <template x-for="item in filteredData" :key="item.id">
+                    <div class="card rounded-xl border border-gray-800 overflow-hidden bg-card shadow-lg relative group transition-transform hover:-translate-y-1"
+                         :class="item.status.code === 'LIVE' ? 'ring-1 ring-red-500/50' : ''">
+                        
+                        <div class="bg-gray-800/80 p-3 border-b border-gray-700 flex justify-between items-center">
+                            <h2 class="font-semibold text-gray-100 truncate pr-2 text-sm" x-text="item.name"></h2>
+                            <span class="text-xs font-mono px-2 py-1 rounded-md bg-gray-950 border border-gray-700 text-accent" x-text="item.schedule_time"></span>
+                        </div>
+
+                        <div class="p-4 text-center">
+                            <div class="flex justify-center items-end gap-3 mb-1">
+                                <div class="flex flex-col items-center">
+                                    <span class="text-[10px] text-gray-500 font-medium mb-1 tracking-widest">3 ตัวบน</span>
+                                    <span class="text-3xl font-black tracking-widest" :class="item.status.code === 'PUBLISHED' ? 'text-red-400' : 'text-gray-600'" x-text="item.result.top3"></span>
+                                </div>
+                                <div class="text-gray-700 text-2xl font-light pb-1">/</div>
+                                <div class="flex flex-col items-center">
+                                    <span class="text-[10px] text-gray-500 font-medium mb-1 tracking-widest">2 ตัวล่าง</span>
+                                    <span class="text-3xl font-black tracking-widest" :class="item.status.code === 'PUBLISHED' ? 'text-blue-400' : 'text-gray-600'" x-text="item.result.bottom2"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="px-4 pb-3 bg-gray-900/50 border-t border-gray-800 pt-2">
+                            <div class="text-[10px] text-gray-500 mb-2 flex justify-between">
+                                <span>สถิติไหลล่าง 5 งวด</span>
+                                <span class="font-semibold" :class="item.status.color" x-text="item.status.text"></span>
+                            </div>
+                            <div class="flex gap-1 justify-between">
+                                <template x-for="(flow_val, index) in item.flow.slice(0, 5)">
+                                    <div class="text-xs font-mono px-1.5 py-1 rounded bg-gray-800 border border-gray-700 text-gray-400 flex-1 text-center" 
+                                         :class="index === 0 && item.status.code === 'PUBLISHED' ? 'border-blue-500/50 text-blue-300 bg-blue-900/20' : ''"
+                                         x-text="flow_val"></div>
+                                </template>
+                                <template x-for="i in Math.max(0, 5 - item.flow.length)">
+                                    <div class="text-xs font-mono px-1.5 py-1 rounded bg-gray-900 border border-gray-800 text-gray-700 flex-1 text-center">--</div>
+                                </template>
+                            </div>
+                        </div>
+                        <div x-show="item.status.code === 'LIVE'" class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-500 via-orange-500 to-red-500 animate-pulse"></div>
+                    </div>
+                </template>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- TAB 2: PRIVATE AI COMMAND CENTER           -->
+        <!-- ========================================== -->
+        <div x-show="activeTab === 'private'" x-transition.opacity.duration.300ms style="display: none;">
+            
+            <div class="mb-6 flex flex-col md:flex-row gap-4 items-center bg-gray-900 p-4 rounded-xl border border-gray-800">
+                <span class="text-sm text-gray-400 font-semibold uppercase tracking-widest">🎯 เลือกเป้าหมายสถิติ:</span>
+                <select x-model="selectedEid" @change="analyzeAiTarget()" class="bg-card border border-gray-700 text-white text-sm rounded-lg focus:ring-purple-500 focus:border-purple-500 block w-full md:w-64 p-2.5 outline-none cursor-pointer">
+                    <template x-for="target in aiTargets" :key="target.id">
+                        <option :value="target.id" x-text="target.name"></option>
+                    </template>
+                </select>
+                <div x-show="isAiLoading" class="text-purple-400 text-sm animate-pulse flex items-center gap-2">
+                    <svg class="animate-spin h-4 w-4" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                    กำลังประมวลผลเชิงควอนตัม...
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- THE BANKER (เจ้ามือ) -->
+                <div class="glass banker-glow rounded-2xl p-6 relative overflow-hidden">
+                    <div class="absolute top-0 right-0 p-4 opacity-10 text-6xl">🏛️</div>
+                    <div class="flex items-center gap-3 mb-6">
+                        <div class="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center border border-blue-500/50">
+                            <span class="text-blue-400 font-bold">B</span>
+                        </div>
+                        <div>
+                            <h2 class="text-xl font-bold text-white tracking-wide">THE BANKER</h2>
+                            <p class="text-xs text-blue-400 uppercase tracking-widest">Risk & Variance Analyzer</p>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4 mb-6">
+                        <div class="bg-gray-900/80 p-4 rounded-xl border border-gray-800">
+                            <div class="text-xs text-gray-500 mb-1">Standard Deviation (SD)</div>
+                            <div class="text-2xl font-mono text-white" x-text="banker.std_dev">0.00</div>
+                        </div>
+                        <div class="bg-gray-900/80 p-4 rounded-xl border border-gray-800">
+                            <div class="text-xs text-gray-500 mb-1">Risk Level</div>
+                            <div class="text-2xl font-bold" 
+                                 :class="banker.risk_level === 'HIGH' ? 'text-red-500' : (banker.risk_level === 'MEDIUM' ? 'text-yellow-500' : 'text-green-500')"
+                                 x-text="banker.risk_level">LOW</div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-blue-900/10 border border-blue-900/30 p-4 rounded-xl mb-4 text-sm text-blue-200">
+                        <span class="font-bold block mb-1">💡 Banker's Assessment:</span>
+                        <span x-text="banker.advice"></span>
+                    </div>
+                </div>
+
+                <!-- THE CHALLENGER (ผู้ท้าชิง) -->
+                <div class="glass challenger-glow rounded-2xl p-6 relative overflow-hidden">
+                    <div class="absolute top-0 right-0 p-4 opacity-10 text-6xl">⚔️</div>
+                    <div class="flex items-center gap-3 mb-6">
+                        <div class="w-10 h-10 rounded-full bg-red-500/20 flex items-center justify-center border border-red-500/50">
+                            <span class="text-red-400 font-bold">C</span>
+                        </div>
+                        <div>
+                            <h2 class="text-xl font-bold text-white tracking-wide">THE CHALLENGER</h2>
+                            <p class="text-xs text-red-400 uppercase tracking-widest">Alpha Set & Monte Carlo</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-900/80 p-4 rounded-xl border border-gray-800 mb-6">
+                        <div class="text-xs text-gray-500 mb-2">Recommended Alpha Set (ชุดเจาะเกราะ)</div>
+                        <div class="flex flex-wrap gap-2">
+                            <template x-for="num in challenger.alpha_set">
+                                <span class="px-3 py-1 bg-red-500/20 border border-red-500/50 text-red-400 rounded font-mono font-bold text-lg" x-text="num"></span>
+                            </template>
+                            <span x-show="challenger.alpha_set.length === 0" class="text-gray-600 font-mono text-sm">Waiting...</span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div class="bg-gray-900/80 p-4 rounded-xl border border-gray-800">
+                            <div class="text-xs text-gray-500 mb-1">Win Probability</div>
+                            <div class="text-xl font-mono text-white"><span x-text="challenger.win_probability">0</span>%</div>
+                        </div>
+                        <div class="bg-gray-900/80 p-4 rounded-xl border border-gray-800">
+                            <div class="text-xs text-gray-500 mb-1">Expected Value (EV)</div>
+                            <div class="text-xl font-mono text-green-400" x-text="challenger.expected_value">0.00</div>
+                        </div>
+                    </div>
+
+                    <div class="bg-red-900/10 border border-red-900/30 p-4 rounded-xl text-sm text-red-200">
+                        <span class="font-bold block mb-1">🎯 Challenger's Strategy:</span>
+                        <span x-text="challenger.advice"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- PASSCODE MODAL                             -->
+        <!-- ========================================== -->
+        <div x-show="showPasscodeModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm" style="display: none;">
+            <div class="bg-card border border-gray-700 p-8 rounded-2xl shadow-2xl max-w-sm w-full text-center" @click.away="closeModal()">
+                <div class="text-4xl mb-4">🔒</div>
+                <h3 class="text-xl font-bold text-white mb-2">Restricted Area</h3>
+                <p class="text-sm text-gray-400 mb-6">กรุณาระบุรหัสผ่านเพื่อเข้าสู่ระบบ AI ควอนตัม</p>
+                <input type="password" x-model="passcode" @keyup.enter="verifyPasscode()" placeholder="••••" class="w-full bg-gray-900 border border-gray-700 text-center text-2xl tracking-widest text-white rounded-lg focus:ring-purple-500 focus:border-purple-500 block p-3 outline-none mb-4">
+                <p x-show="passcodeError" class="text-red-500 text-xs mb-4 animate-bounce">รหัสผ่านไม่ถูกต้อง</p>
+                <div class="flex gap-3">
+                    <button @click="closeModal()" class="flex-1 py-2 rounded-lg bg-gray-800 text-gray-300 hover:bg-gray-700 transition-colors">ยกเลิก</button>
+                    <button @click="verifyPasscode()" class="flex-1 py-2 rounded-lg bg-purple-600 text-white font-bold hover:bg-purple-500 transition-colors">ยืนยัน</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Application Logic -->
+    <script>
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('avalonApp', () => ({
+                API_URL: "http://127.0.0.1:8000/api/v1", // แก้เป็น IP จริงหากนำขึ้น Server
+                
+                // Tabs & Security State
+                activeTab: 'public',
+                isAiUnlocked: false,
+                showPasscodeModal: false,
+                passcode: '',
+                passcodeError: false,
+                
+                // Public Data
+                feedData: [],
+                searchQuery: '',
+                isFeedLoading: false,
+                
+                // Private AI Data
+                aiTargets: [],
+                selectedEid: '',
+                isAiLoading: false,
+                banker: { std_dev: 0, variance: 0, risk_level: '-', advice: '...', digit_distribution: {} },
+                challenger: { expected_value: 0, alpha_set: [], advice: '...', win_probability: 0 },
+
+                init() {
+                    this.fetchDashboardFeed();
+                    setInterval(() => {
+                        if(this.activeTab === 'public') this.fetchDashboardFeed();
+                    }, 30000);
+                },
+
+                // --- Public Methods ---
+                async fetchDashboardFeed() {
+                    this.isFeedLoading = true;
+                    try {
+                        const response = await fetch(`${this.API_URL}/dashboard/feed`);
+                        if (response.ok) {
+                            const json = await response.json();
+                            this.feedData = json.data || [];
+                        }
+                    } catch (error) { console.error('Feed Fetch Error:', error); } 
+                    finally { this.isFeedLoading = false; }
+                },
+
+                get filteredData() {
+                    if (this.searchQuery === '') return this.feedData;
+                    const query = this.searchQuery.toLowerCase();
+                    return this.feedData.filter(item => 
+                        item.name.toLowerCase().includes(query) || 
+                        item.schedule_time.includes(query)
+                    );
+                },
+
+                // --- Security Methods ---
+                openPrivateTab() {
+                    if (this.isAiUnlocked) {
+                        this.activeTab = 'private';
+                        if(this.aiTargets.length === 0) this.loadAiTargets();
+                    } else {
+                        this.passcode = '';
+                        this.passcodeError = false;
+                        this.showPasscodeModal = true;
+                    }
+                },
+                
+                closeModal() {
+                    this.showPasscodeModal = false;
+                },
+
+                verifyPasscode() {
+                    if (this.passcode === '4869') {
+                        this.isAiUnlocked = true;
+                        this.showPasscodeModal = false;
+                        this.activeTab = 'private';
+                        this.loadAiTargets();
+                    } else {
+                        this.passcodeError = true;
+                        this.passcode = '';
+                    }
+                },
+
+                // --- Private AI Methods ---
+                async loadAiTargets() {
+                    try {
+                        const response = await fetch(`${this.API_URL}/private/targets`);
+                        this.aiTargets = await response.json();
+                        if (this.aiTargets.length > 0 && !this.selectedEid) {
+                            this.selectedEid = this.aiTargets[0].id;
+                            this.analyzeAiTarget();
+                        }
+                    } catch (e) { console.error("Load Targets Error", e); }
+                },
+
+                async analyzeAiTarget() {
+                    if (!this.selectedEid) return;
+                    this.isAiLoading = true;
+                    try {
+                        const [bRes, cRes] = await Promise.all([
+                            fetch(`${this.API_URL}/private/banker/${this.selectedEid}`),
+                            fetch(`${this.API_URL}/private/challenger/${this.selectedEid}`)
+                        ]);
+                        this.banker = await bRes.json();
+                        this.challenger = await cRes.json();
+                    } catch (e) { console.error("AI Analysis failed", e); }
+                    finally { this.isAiLoading = false; }
+                }
+            }))
+        });
     </script>
 </body>
 </html>
