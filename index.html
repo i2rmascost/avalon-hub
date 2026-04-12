@@ -3,125 +3,168 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DD COSMOS - Destiny OS v62</title>
+    <title>DD COSMOS - Destiny OS v62 [Matrix Edition]</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;600;800;900&display=swap" rel="stylesheet">
     <style>
         body { background-color: #020617; color: #f8fafc; font-family: 'Prompt', sans-serif; }
-        .glass { background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(15px); border: 1px solid rgba(255, 255, 255, 0.05); }
+        .glass { background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.05); }
+        .matrix-grid { display: grid; grid-template-columns: repeat(10, 1fr); gap: 3px; }
+        .matrix-cell { 
+            aspect-ratio: 1; display: flex; align-items: center; justify-content: center; 
+            font-size: 0.65rem; font-weight: 800; border-radius: 4px; 
+            transition: all 0.4s ease; border: 1px solid rgba(255,255,255,0.02);
+            color: rgba(255,255,255,0.4);
+        }
+        .matrix-cell:hover { transform: scale(1.3); z-index: 10; color: white; border-color: rgba(245, 158, 11, 0.8); box-shadow: 0 0 15px rgba(245, 158, 11, 0.5); }
         [x-cloak] { display: none !important; }
     </style>
 </head>
 <body x-data="ddCosmosUI()" x-init="init()">
 
-    <div class="max-w-6xl mx-auto p-4 md:p-6 pb-24">
-        <!-- HEADER -->
-        <header class="flex flex-col md:flex-row justify-between items-center gap-4 mb-8 glass p-6 rounded-[2rem] border border-white/10 shadow-2xl">
-            <div class="text-center md:text-left">
-                <h1 class="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-sky-500">
-                    DD COSMOS <span class="text-[10px] text-gray-500">Destiny OS v62</span>
+    <div class="max-w-6xl mx-auto p-4 md:p-6 pb-32">
+        <!-- HEADER: COMMAND CENTER -->
+        <header class="flex flex-col md:flex-row justify-between items-center gap-4 mb-8 glass p-6 rounded-[2rem] shadow-2xl relative overflow-hidden">
+            <div class="absolute -top-20 -right-20 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl pointer-events-none"></div>
+            <div class="text-center md:text-left z-10">
+                <h1 class="text-3xl font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-yellow-500 to-sky-500">
+                    DD COSMOS <span class="text-[10px] text-gray-500 font-normal">Destiny OS v62</span>
                 </h1>
-                <p class="text-[10px] text-gray-400 uppercase tracking-[0.4em] mt-1">Manifesting Your Wealth Ecosystem</p>
+                <p class="text-[10px] text-gray-400 uppercase tracking-[0.4em] mt-1">Omnipresent Intelligence & Matrix</p>
             </div>
-            <div class="flex gap-2 bg-gray-900/50 p-1 rounded-xl border border-white/5">
-                <button @click="tab = 'targets'" :class="tab === 'targets' ? 'bg-sky-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'" class="px-5 py-2.5 rounded-lg text-xs font-bold transition-all">🎯 เป้าหมายทรัพย์</button>
-                <button @click="tab = 'ai'" :class="tab === 'ai' ? 'bg-amber-600 text-white shadow-lg' : 'text-gray-400 hover:text-white'" class="px-5 py-2.5 rounded-lg text-xs font-bold transition-all">🤖 57 สมองกล</button>
+            <div class="flex gap-2 bg-gray-900/60 p-1.5 rounded-2xl border border-white/5 z-10">
+                <button @click="tab = 'targets'" :class="tab === 'targets' ? 'bg-sky-600 text-white shadow-[0_0_15px_rgba(2,132,199,0.4)]' : 'text-gray-400 hover:text-white'" class="px-6 py-3 rounded-xl text-xs font-bold transition-all">🎯 เป้าหมายทรัพย์</button>
+                <button @click="tab = 'ai'" :class="tab === 'ai' ? 'bg-amber-600 text-white shadow-[0_0_15px_rgba(217,119,6,0.4)]' : 'text-gray-400 hover:text-white'" class="px-6 py-3 rounded-xl text-xs font-bold transition-all flex items-center gap-2">
+                    🤖 Ops AI <span x-show="aiLoading" class="w-2 h-2 bg-white rounded-full animate-ping"></span>
+                </button>
             </div>
         </header>
 
         <!-- TAB 1: PUBLIC TARGETS (130 Feeds) -->
-        <div x-show="tab === 'targets'" x-transition class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        <div x-show="tab === 'targets'" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 transform translate-y-4" x-transition:enter-end="opacity-100 transform translate-y-0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             <template x-for="item in targets" :key="item.id">
-                <div @click="analyzeAI(item)" class="glass p-5 rounded-3xl flex flex-col group hover:bg-white/5 hover:border-sky-500/30 cursor-pointer border border-white/5 transition-all">
-                    <div class="flex justify-between items-start mb-4">
+                <div @click="analyzeAI(item)" class="glass p-5 rounded-[2rem] flex flex-col group hover:bg-gray-800/50 cursor-pointer border border-white/5 hover:border-sky-500/40 transition-all relative overflow-hidden">
+                    <div class="absolute inset-0 bg-gradient-to-br from-sky-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <div class="flex justify-between items-start mb-5 z-10">
                         <div>
                             <h3 class="text-base font-black text-gray-200 group-hover:text-sky-400 transition-colors" x-text="item.name"></h3>
-                            <p class="text-[10px] text-gray-500 font-mono tracking-widest uppercase mt-0.5" x-text="'เวลา: ' + item.time"></p>
+                            <p class="text-[10px] text-gray-500 font-mono tracking-widest uppercase mt-1" x-text="'เวลา: ' + item.time"></p>
                         </div>
-                        <span :class="item.status === 'PUBLISHED' ? 'text-green-400 border-green-500/30' : 'text-yellow-400 border-yellow-500/30'" class="text-[9px] font-black border px-2 py-0.5 rounded-full" x-text="item.status || 'LIVE'"></span>
+                        <span :class="item.status === 'PUBLISHED' ? 'text-green-400 border-green-500/30 bg-green-500/10' : 'text-amber-400 border-amber-500/30 bg-amber-500/10'" class="text-[9px] font-black border px-2.5 py-1 rounded-full" x-text="item.status || 'LIVE'"></span>
                     </div>
-                    <div class="flex justify-center items-center gap-3 mb-4 py-5 bg-black/30 rounded-2xl border border-white/5 relative overflow-hidden">
-                        <div class="absolute inset-0 bg-gradient-to-r from-sky-500/0 via-sky-500/5 to-sky-500/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
-                        <span class="text-3xl font-black text-white" x-text="item.result.top3"></span>
+                    <div class="flex justify-center items-center gap-3 mb-5 py-5 bg-black/40 rounded-2xl border border-white/5 z-10 shadow-inner">
+                        <span class="text-4xl font-black text-white tracking-tighter" x-text="item.result.top3"></span>
                         <span class="text-gray-700 text-2xl font-light">/</span>
-                        <span class="text-3xl font-black text-sky-400" x-text="item.result.bottom2"></span>
+                        <span class="text-4xl font-black text-sky-400 tracking-tighter" x-text="item.result.bottom2"></span>
                     </div>
-                    <div class="flex gap-1.5 opacity-50 group-hover:opacity-100 transition-opacity">
+                    <div class="flex gap-1.5 opacity-50 group-hover:opacity-100 transition-opacity z-10">
                         <template x-for="flow in item.flow">
-                            <div class="flex-1 text-[10px] font-mono text-center py-1.5 bg-gray-950 rounded-lg text-gray-400 border border-white/5" x-text="flow"></div>
+                            <div class="flex-1 text-[10px] font-mono text-center py-2 bg-gray-950 rounded-xl text-gray-400 border border-white/5" x-text="flow"></div>
                         </template>
                     </div>
                 </div>
             </template>
-            <div x-show="targets.length === 0" class="col-span-full text-center py-20 text-gray-500 text-sm font-mono glass rounded-3xl">
+            <div x-show="targets.length === 0" class="col-span-full text-center py-24 text-gray-500 text-xs font-mono glass rounded-[2rem] border border-white/5">
                 [ ⏳ SYSTEM AWAITING DATA INGESTION OR CSV MAP... ]
             </div>
         </div>
 
-        <!-- TAB 2: PRIVATE AI (57 Synapses) -->
-        <div x-show="tab === 'ai'" x-cloak x-transition>
-            <div x-show="aiLoading" class="text-center py-32 text-amber-500 animate-pulse font-bold tracking-[0.3em] text-sm">
-                [ QUANTUM PROCESSING 57 SYNAPSES... ]
+        <!-- TAB 2: PRIVATE AI (Triple-Box Integration & Matrix) -->
+        <div x-show="tab === 'ai'" x-cloak>
+            
+            <!-- Loading State -->
+            <div x-show="aiLoading" class="flex flex-col items-center justify-center py-32 glass rounded-[2.5rem] border border-white/5">
+                <div class="w-16 h-16 border-4 border-amber-500/20 border-t-amber-500 rounded-full animate-spin mb-6"></div>
+                <div class="text-amber-500 animate-pulse font-bold tracking-[0.3em] text-xs">QUANTUM PROCESSING 57 SYNAPSES...</div>
             </div>
             
-            <div x-show="!aiLoading && opsVerdict" class="glass p-8 md:p-10 rounded-[2.5rem] bg-gradient-to-br from-gray-900 to-amber-950/30 border border-amber-500/20 shadow-[0_0_50px_rgba(245,158,11,0.05)]">
-                <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 border-b border-white/10 pb-6 gap-4">
+            <!-- Result State -->
+            <div x-show="!aiLoading && opsVerdict" x-transition:enter="transition ease-out duration-500" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" class="glass p-6 md:p-10 rounded-[2.5rem] bg-gradient-to-br from-gray-900 to-amber-950/20 border border-amber-500/20 shadow-[0_0_50px_rgba(245,158,11,0.05)]">
+                
+                <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8 gap-4 border-b border-white/5 pb-6">
                     <div>
                         <h2 class="text-2xl font-extrabold text-white flex items-center gap-3">
-                            <span class="text-amber-500 text-3xl">🤖</span> แผนเนรมิตยุทธศาสตร์
+                            <span class="text-amber-500 text-3xl">🔮</span> แผนเนรมิตยุทธศาสตร์
                         </h2>
-                        <p class="text-sm text-amber-400/80 mt-1 font-bold" x-text="selectedName"></p>
+                        <p class="text-sm text-amber-400 mt-1 font-bold bg-amber-500/10 inline-block px-3 py-1 rounded-lg" x-text="selectedName"></p>
                     </div>
-                    <div class="text-right bg-black/40 p-3 rounded-2xl border border-white/5 w-full md:w-auto">
+                    <div class="text-right bg-black/50 px-6 py-3 rounded-2xl border border-white/5 w-full lg:w-auto flex flex-col justify-center items-center lg:items-end">
                         <span class="text-[9px] text-sky-400 font-bold tracking-[0.2em] uppercase block mb-1">WIN PROBABILITY</span>
-                        <div class="text-3xl font-black text-white" x-text="opsVerdict.confidence_score + '%'"></div>
+                        <div class="text-4xl font-black text-white" x-text="opsVerdict.confidence_score + '%'"></div>
                     </div>
                 </div>
                 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-                    <!-- Numbers Area -->
-                    <div class="flex justify-center items-center gap-8 py-10 bg-black/40 rounded-3xl border border-white/5 relative">
-                        <div class="absolute top-2 right-4 text-[10px] text-gray-600 font-mono">TARGET_ID: <span x-text="opsVerdict.target_id"></span></div>
-                        <div class="text-center">
-                            <span class="text-7xl font-black text-white tracking-tighter drop-shadow-lg" x-text="opsVerdict.final_numbers[0]"></span>
-                            <p class="text-[10px] text-gray-500 mt-3 uppercase tracking-widest font-bold">Alpha Strike</p>
+                <div class="grid grid-cols-1 xl:grid-cols-12 gap-8 mb-8">
+                    
+                    <!-- Left Column: The Numbers & Info -->
+                    <div class="xl:col-span-7 flex flex-col gap-6">
+                        <!-- Big Numbers -->
+                        <div class="flex justify-center items-center gap-8 py-12 bg-black/50 rounded-[2rem] border border-white/5 relative shadow-inner">
+                            <div class="absolute top-4 right-5 text-[9px] text-gray-600 font-mono">ID: <span x-text="opsVerdict.target_id"></span></div>
+                            <div class="text-center">
+                                <span class="text-7xl md:text-8xl font-black text-white tracking-tighter drop-shadow-2xl" x-text="opsVerdict.final_numbers[0]"></span>
+                                <p class="text-[10px] text-gray-500 mt-4 uppercase tracking-[0.2em] font-bold">Alpha Strike (สถิติ)</p>
+                            </div>
+                            <span class="text-5xl text-gray-800 font-light">/</span>
+                            <div class="text-center">
+                                <span class="text-7xl md:text-8xl font-black text-amber-500 tracking-tighter drop-shadow-[0_0_15px_rgba(245,158,11,0.4)]" x-text="opsVerdict.final_numbers[1]"></span>
+                                <p class="text-[10px] text-amber-600 mt-4 uppercase tracking-[0.2em] font-bold">Mystic Core (ฤกษ์ยาม)</p>
+                            </div>
                         </div>
-                        <span class="text-5xl text-gray-800 font-light">/</span>
-                        <div class="text-center">
-                            <span class="text-7xl font-black text-amber-500 tracking-tighter drop-shadow-lg" x-text="opsVerdict.final_numbers[1]"></span>
-                            <p class="text-[10px] text-amber-600/70 mt-3 uppercase tracking-widest font-bold">Mystic Core</p>
+
+                        <!-- Timing & Direction -->
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="bg-sky-950/20 p-5 rounded-2xl border border-sky-500/10 flex items-center gap-4">
+                                <div class="w-12 h-12 rounded-full bg-sky-500/20 flex items-center justify-center text-sky-400 text-xl">⏳</div>
+                                <div>
+                                    <p class="text-[9px] text-gray-500 uppercase tracking-widest">วินาทีเนรมิต (Timing)</p>
+                                    <p class="text-sm font-bold text-white mt-1" x-text="opsVerdict.manifestation_plan.timing"></p>
+                                </div>
+                            </div>
+                            <div class="bg-emerald-950/20 p-5 rounded-2xl border border-emerald-500/10 flex items-center gap-4">
+                                <div class="w-12 h-12 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 text-xl">🧭</div>
+                                <div>
+                                    <p class="text-[9px] text-gray-500 uppercase tracking-widest">ทิศทางรับทรัพย์</p>
+                                    <p class="text-sm font-bold text-white mt-1" x-text="opsVerdict.manifestation_plan.direction"></p>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    
-                    <!-- Timing & Direction Area -->
-                    <div class="flex flex-col justify-center space-y-4">
-                        <div class="glass p-4 rounded-2xl border border-white/5 flex items-center gap-4">
-                            <div class="w-10 h-10 rounded-full bg-sky-500/20 flex items-center justify-center text-sky-400 text-lg">⏳</div>
-                            <div>
-                                <p class="text-[10px] text-gray-500 uppercase tracking-widest">วินาทีเนรมิต (Timing Window)</p>
-                                <p class="text-sm font-bold text-white mt-0.5" x-text="opsVerdict.manifestation_plan.timing"></p>
+
+                    <!-- Right Column: Quantum Heatmap -->
+                    <div class="xl:col-span-5 bg-black/40 p-6 rounded-[2rem] border border-white/5 flex flex-col">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-[10px] font-bold uppercase tracking-[0.2em] text-amber-500">Quantum Heatmap</h3>
+                            <div class="flex gap-3">
+                                <div class="flex items-center gap-1"><span class="w-2 h-2 rounded bg-amber-500"></span><span class="text-[8px] text-gray-500">HOT</span></div>
+                                <div class="flex items-center gap-1"><span class="w-2 h-2 rounded bg-gray-800"></span><span class="text-[8px] text-gray-500">COLD</span></div>
                             </div>
                         </div>
-                        <div class="glass p-4 rounded-2xl border border-white/5 flex items-center gap-4">
-                            <div class="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 text-lg">🧭</div>
-                            <div>
-                                <p class="text-[10px] text-gray-500 uppercase tracking-widest">ทิศทางโชคลาภ (Astromancy)</p>
-                                <p class="text-sm font-bold text-white mt-0.5" x-text="opsVerdict.manifestation_plan.direction"></p>
-                            </div>
+                        
+                        <!-- 10x10 Matrix Grid -->
+                        <div class="matrix-grid flex-1">
+                            <template x-for="i in 100" :key="i">
+                                <div class="matrix-cell"
+                                     :style="getMatrixStyle((i-1).toString().padStart(2, '0'))"
+                                     x-text="(i-1).toString().padStart(2, '0')">
+                                </div>
+                            </template>
                         </div>
                     </div>
                 </div>
 
-                <!-- Reasoning -->
-                <div class="bg-indigo-950/30 p-6 rounded-3xl border-l-4 border-amber-500 relative">
-                    <span class="absolute -top-3 left-4 bg-indigo-900 text-amber-400 text-[9px] px-2 py-1 rounded-full font-bold tracking-widest border border-amber-500/30">OPS AI LOGIC</span>
-                    <p class="text-sm leading-relaxed text-gray-300 mt-2" x-text="opsVerdict.manifestation_plan.reasoning"></p>
+                <!-- Ops AI Reasoning -->
+                <div class="bg-gray-950/50 p-6 md:p-8 rounded-[2rem] border-l-4 border-amber-500 relative shadow-inner">
+                    <span class="absolute -top-3 left-6 bg-amber-500 text-black text-[9px] px-3 py-1 rounded-full font-black tracking-widest shadow-lg">OPS AI SYNTHESIS</span>
+                    <p class="text-sm leading-relaxed text-gray-300 mt-2 font-light" x-text="opsVerdict.manifestation_plan.reasoning"></p>
                 </div>
             </div>
             
-            <div x-show="!aiLoading && !opsVerdict" class="text-center py-32 text-gray-500 text-sm font-mono glass rounded-[2.5rem] border border-white/5">
-                [ กรุณาคลิกเลือกการ์ดเป้าหมายในหมวด 'เป้าหมายทรัพย์' เพื่อจำลองมติ 57 สมองกล ]
+            <!-- Empty State -->
+            <div x-show="!aiLoading && !opsVerdict" class="flex flex-col items-center justify-center py-32 text-gray-500 text-xs font-mono glass rounded-[2.5rem] border border-white/5">
+                <span class="text-4xl mb-4 opacity-20">📊</span>
+                [ คลิ๊กเลือกการ์ดเป้าหมาย เพื่อจำลองมติ 57 สมองกล และประมวลผล Heatmap ]
             </div>
         </div>
     </div>
@@ -129,7 +172,7 @@
     <script>
         function ddCosmosUI() {
             return {
-                // 🔐 THE AXIOM CONFIGURATION LOCK
+                // 🔐 THE AXIOM CONFIGURATION LOCK [2026-03-29]
                 TOKEN: "AXIOM_SECURE_TOKEN_V3_2026", 
                 FOLDER_ID: "1jvrFhAk1H-XMrjqFpzlPAFmU0GwDoVdl",
                 LIFF_URL: "https://i2rmascost.github.io/avalon-hub/",
@@ -139,11 +182,12 @@
                 opsVerdict: null,
                 selectedName: '',
                 aiLoading: false,
+                matrixMap: {}, // เก็บข้อมูล Quantum Heatmap
 
                 async init() {
-                    console.log("[AXIOM] UI Operational. Token verified.");
+                    console.log("[AXIOM] Dashboard Operational. Matrix Protocol Online.");
                     await this.fetchData();
-                    setInterval(() => this.fetchData(), 30000); // Auto-refresh 30s
+                    setInterval(() => this.fetchData(), 30000); // Auto-sync ทุก 30 วิ
                 },
 
                 async fetchData() {
@@ -155,7 +199,7 @@
                             const json = await res.json();
                             this.targets = json.data;
                         }
-                    } catch(e) { console.error("Data Fetch Failed:", e); }
+                    } catch(e) { console.error("Feed Sync Failed:", e); }
                 },
 
                 async analyzeAI(item) {
@@ -163,20 +207,35 @@
                     this.selectedName = item.name;
                     this.aiLoading = true;
                     this.opsVerdict = null; 
+                    this.matrixMap = {};
+
                     try {
-                        // หน่วงเวลา UI เล็กน้อยให้ดูเหมือน AI กำลังเค้นสมองคิด (UX Psychological Trick)
-                        await new Promise(r => setTimeout(r, 600)); 
+                        // ป้องกัน Rate Limit และเพิ่ม UX ให้ดูเหมือน AI กำลังประมวลผล
+                        await new Promise(r => setTimeout(r, 800)); 
                         
                         const res = await fetch(`/api/v1/private/ai/${item.id}`, { 
                             headers: { 'x-token': this.TOKEN } 
                         });
+                        
                         if(res.ok) {
                             this.opsVerdict = await res.json();
+                            // รับค่า Heatmap จาก API (0.0 ถึง 1.0)
+                            this.matrixMap = this.opsVerdict.quantum_matrix || {};
                         } else {
-                            console.error("API Error", res.status);
+                            console.error("AI Arbitration Error", res.status);
                         }
-                    } catch(e) { console.error("AI Analysis Failed:", e); }
+                    } catch(e) { console.error("Matrix Calculation Failed:", e); }
                     finally { this.aiLoading = false; }
+                },
+
+                getMatrixStyle(numStr) {
+                    // คำนวณสีพื้นหลังตามค่าความร้อน (Heat) ของตัวเลข
+                    const heatValue = this.matrixMap[numStr] || 0;
+                    if (heatValue === 0) return 'background-color: rgba(30, 41, 59, 0.5);'; // Cold (Gray)
+                    
+                    // ค่าความร้อนสูง -> สี Amber ทึบขึ้น
+                    const alpha = 0.1 + (heatValue * 0.9);
+                    return `background-color: rgba(245, 158, 11, ${alpha}); color: white; border-color: rgba(245,158,11, ${alpha});`;
                 }
             }
         }
