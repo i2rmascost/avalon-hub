@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Avalon Hub</title>
+    <script>
+      const path = location.pathname.replace(/\/$/, '');
+      const redirect = `${location.origin}/?p=${encodeURIComponent(path + location.search + location.hash)}`;
+      location.replace(redirect);
+    </script>
+  </head>
+  <body></body>
+</html>
