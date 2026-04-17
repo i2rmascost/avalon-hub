@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Avalon Hub Lottery</title>
+    <script>
+      const projectBase = '/avalon-hub';
+      const rawPath = location.pathname + location.search + location.hash;
+      const alreadyBased = rawPath === projectBase || rawPath.startsWith(`${projectBase}/`);
+      const route = alreadyBased
+        ? rawPath
+        : `${projectBase}${rawPath.startsWith('/') ? '' : '/'}${rawPath}`;
+      const target = `${location.origin}${projectBase}/?p=${encodeURIComponent(route)}`;
+
+      if (location.href !== target) {
+        location.replace(target);
+      }
+    </script>
+  </head>
+  <body></body>
+</html>
